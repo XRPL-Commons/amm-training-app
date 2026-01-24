@@ -172,7 +172,7 @@
           <UInput v-model="editName" placeholder="Enter name" />
         </UFormGroup>
         <div class="flex justify-end gap-2 mt-6">
-          <UButton color="gray" variant="soft" @click="showEditModal = false">Cancel</UButton>
+          <UButton color="primary" variant="ghost" @click="showEditModal = false">Cancel</UButton>
           <UButton color="primary" @click="saveUserName" :loading="saving">Save</UButton>
         </div>
       </div>
@@ -194,7 +194,7 @@
           <ColoredAddress :address="deletingUser.xrplAddress" variant="boxes" />
         </div>
         <div class="flex justify-end gap-2">
-          <UButton color="gray" variant="soft" @click="showDeleteModal = false">Cancel</UButton>
+          <UButton color="primary" variant="ghost" @click="showDeleteModal = false">Cancel</UButton>
           <UButton color="red" @click="deleteUser" :loading="deleting">Delete</UButton>
         </div>
       </div>
@@ -213,7 +213,7 @@
           This will remove all {{ users.length }} users. This action cannot be undone.
         </p>
         <div class="flex justify-end gap-2">
-          <UButton color="gray" variant="soft" @click="showClearModal = false">Cancel</UButton>
+          <UButton color="primary" variant="ghost" @click="showClearModal = false">Cancel</UButton>
           <UButton color="red" @click="clearAllUsers">Clear All</UButton>
         </div>
       </div>

@@ -133,10 +133,11 @@
         </div>
         <div>
           <div class="text-xs text-gray-500 mb-2">Bars</div>
-          <div class="flex items-center gap-2">
-            <ColoredAddress address="rUjAsPvagJoctx1nmSM7yCf9BEPCKT4mEB" variant="bars" />
-            <span class="text-xs text-white font-mono">rUjAsPvagJoctx1nmSM7yCf9BEPCKT4mEB</span>
-          </div>
+          <ColoredAddress address="rUjAsPvagJoctx1nmSM7yCf9BEPCKT4mEB" variant="bars" />
+        </div>
+        <div>
+          <div class="text-xs text-gray-500 mb-2">Bars with Label</div>
+          <ColoredAddress address="rUjAsPvagJoctx1nmSM7yCf9BEPCKT4mEB" variant="barsLabel" />
         </div>
         <div>
           <div class="text-xs text-gray-500 mb-2">Text</div>
