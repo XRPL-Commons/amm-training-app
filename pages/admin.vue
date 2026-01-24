@@ -32,18 +32,7 @@
             <UButton @click="triggerFileInput" color="orange" variant="ghost" size="sm" icon="i-heroicons-arrow-up-tray" />
           </UTooltip>
           <UTooltip text="Clear all users">
-            <UButton
-              v-if="!confirmClear"
-              @click="confirmClear = true"
-              color="red"
-              variant="ghost"
-              size="sm"
-              icon="i-heroicons-trash"
-            />
-            <div v-else class="flex items-center gap-1">
-              <UButton @click="clearAllUsers" color="red" size="xs">Confirm</UButton>
-              <UButton @click="confirmClear = false" color="gray" size="xs">Cancel</UButton>
-            </div>
+            <UButton @click="showClearModal = true" color="red" variant="ghost" size="sm" icon="i-heroicons-trash" />
           </UTooltip>
         </div>
       </div>
@@ -73,7 +62,8 @@
           <tr
             v-for="user in users"
             :key="user.xrplAddress"
-            class="border-t border-gray-100 dark:border-gray-700"
+            class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+            @click="openUserDetails(user)"
           >
             <td class="py-3 px-4 font-medium">{{ user.name }}</td>
             <td class="py-3 px-4 font-mono text-xs text-gray-500">{{ user.xrplAddress }}</td>
@@ -87,6 +77,38 @@
     <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center text-gray-500">
       No users registered
     </div>
+
+    <!-- User Details Slideover -->
+    <AdminUserSlideover
+      v-model="showUserSlideover"
+      :user="selectedUser"
+      @viewAmm="openAmmDetails"
+    />
+
+    <!-- AMM Details Slideover -->
+    <AdminAmmSlideover
+      v-model="showAmmSlideover"
+      :token="selectedToken"
+    />
+
+    <!-- Clear Confirmation Modal -->
+    <UModal v-model="showClearModal">
+      <div class="p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <Icon name="heroicons:exclamation-triangle" class="w-5 h-5 text-red-600 dark:text-red-400" />
+          </div>
+          <h3 class="text-lg font-title text-gray-900 dark:text-white">Clear all users?</h3>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 mb-6">
+          This will remove all {{ users.length }} users. This action cannot be undone.
+        </p>
+        <div class="flex justify-end gap-2">
+          <UButton color="gray" @click="showClearModal = false">Cancel</UButton>
+          <UButton color="red" @click="clearAllUsers">Clear All</UButton>
+        </div>
+      </div>
+    </UModal>
   </div>
 </template>
 
@@ -100,10 +122,24 @@ interface User {
   createdAt: string
 }
 
+interface Token {
+  currency: string
+  issuer: string
+  amount: string
+}
+
 const users = ref<User[]>([])
-const confirmClear = ref(false)
 const restoreStatus = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
+
+// Slideover state
+const showUserSlideover = ref(false)
+const showAmmSlideover = ref(false)
+const selectedUser = ref<User | null>(null)
+const selectedToken = ref<Token | null>(null)
+
+// Modal state
+const showClearModal = ref(false)
 
 onMounted(async () => {
   await refreshUsers()
@@ -115,6 +151,16 @@ async function refreshUsers() {
   } catch (error) {
     console.error('Failed to fetch users:', error)
   }
+}
+
+function openUserDetails(user: User) {
+  selectedUser.value = user
+  showUserSlideover.value = true
+}
+
+function openAmmDetails(token: Token) {
+  selectedToken.value = token
+  showAmmSlideover.value = true
 }
 
 async function downloadBackup() {
@@ -159,7 +205,7 @@ async function handleFileSelect(event: Event) {
 async function clearAllUsers() {
   try {
     await API.clearUsers({})
-    confirmClear.value = false
+    showClearModal.value = false
     await refreshUsers()
   } catch (error) {
     alert('Failed to clear users')
