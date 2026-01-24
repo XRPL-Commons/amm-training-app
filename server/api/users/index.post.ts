@@ -1,7 +1,7 @@
 import { mintNft } from '~/server/connectors/wallet'
 import { getWallet } from '@/server/utils'
-import { AddUser, GetUsers } from '~/server/connectors/mongo'
-import type { User } from '~/server/connectors/mongo'
+import { AddUser, GetUsers } from '~/server/connectors/memory'
+import type { User } from '~/server/connectors/memory'
 
 export const createUser = async ({ xrplAddress, name }: { xrplAddress: string, name: string }) => {
     try {

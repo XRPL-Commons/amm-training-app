@@ -1,4 +1,4 @@
-import { GetUsers } from '~/server/connectors/mongo'
+import { GetUsers } from '~/server/connectors/memory'
 import type { AccountLinesRequest, AccountLinesResponse } from 'xrpl'
 import { convertPaddedHexToString, getExplorerClient } from '~/server/utils';
 

@@ -1,4 +1,4 @@
-import { GetUsers } from '~/server/connectors/mongo'
+import { GetUsers } from '~/server/connectors/memory'
 
 const getUsers = async () => {
   // list existing users
