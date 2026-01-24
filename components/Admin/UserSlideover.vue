@@ -83,24 +83,38 @@
       </div>
 
       <!-- LP Tokens / Pool Positions -->
-      <div v-if="lpTokens.length > 0" class="mt-6">
+      <div v-if="lpTokensWithPool.length > 0" class="mt-6">
         <div class="text-xs text-gray-500 uppercase mb-3">Pool Positions</div>
         <div class="space-y-2">
           <div
-            v-for="token in lpTokens"
-            :key="`${token.currency}-${token.issuer}`"
+            v-for="lp in lpTokensWithPool"
+            :key="`${lp.currency}-${lp.issuer}`"
             class="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3"
           >
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
-                <span class="font-medium text-gray-800 dark:text-white">LP Token</span>
+                <span v-if="lp.poolInfo" class="font-medium text-gray-800 dark:text-white">
+                  {{ lp.poolInfo.asset1.currency }} / {{ lp.poolInfo.asset2.currency }}
+                </span>
+                <span v-else class="font-medium text-gray-800 dark:text-white">LP Token</span>
                 <span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400">
-                  AMM
+                  {{ lp.poolInfo?.tradingFee || 'AMM' }}
                 </span>
               </div>
-              <div class="text-gray-600 dark:text-gray-400">{{ formatAmount(token.amount) }}</div>
+              <div class="text-gray-600 dark:text-gray-400">{{ formatAmount(lp.amount) }}</div>
             </div>
-            <div class="text-xs text-gray-500 truncate mt-1">{{ token.issuer }}</div>
+            <div class="text-xs text-gray-500 truncate mt-1">{{ lp.issuer }}</div>
+            <div v-if="lp.poolInfo" class="flex gap-2 mt-2">
+              <UButton
+                size="xs"
+                color="purple"
+                variant="soft"
+                icon="i-heroicons-arrow-path-rounded-square"
+                @click="$emit('viewAmm', getNonXrpAsset(lp.poolInfo))"
+              >
+                View Pool
+              </UButton>
+            </div>
           </div>
         </div>
       </div>
@@ -176,6 +190,17 @@ interface Token {
   isLPToken: boolean
 }
 
+interface PoolInfo {
+  asset1: { currency: string; amount: string; issuer?: string }
+  asset2: { currency: string; amount: string; issuer?: string }
+  tradingFee: string
+  account: string
+}
+
+interface LPTokenWithPool extends Token {
+  poolInfo?: PoolInfo | null
+}
+
 const props = defineProps<{
   user: User | null
   modelValue: boolean
@@ -193,11 +218,11 @@ const isOpen = computed({
 
 const loading = ref(false)
 const tokens = ref<Token[]>([])
+const lpTokensWithPool = ref<LPTokenWithPool[]>([])
 const accountInfo = ref<any>(null)
 const trustlineLoading = ref<string | null>(null)
 
 const regularTokens = computed(() => tokens.value.filter(t => !t.isLPToken))
-const lpTokens = computed(() => tokens.value.filter(t => t.isLPToken))
 
 // QR Modal state
 const showQrModal = ref(false)
@@ -219,6 +244,7 @@ async function loadData() {
   if (!props.user) return
   loading.value = true
   tokens.value = []
+  lpTokensWithPool.value = []
   accountInfo.value = null
 
   try {
@@ -228,6 +254,14 @@ async function loadData() {
     ])
     tokens.value = tokensResult
     accountInfo.value = accountResult
+
+    // Fetch pool info for LP tokens
+    const lpTokens = tokensResult.filter((t: Token) => t.isLPToken)
+    const poolInfoPromises = lpTokens.map(async (token: Token) => {
+      const poolInfo = await API.getAmmByAccount({ ammAccount: token.issuer })
+      return { ...token, poolInfo }
+    })
+    lpTokensWithPool.value = await Promise.all(poolInfoPromises)
   } catch (error) {
     console.error('Failed to load user data:', error)
   } finally {
@@ -321,5 +355,21 @@ function formatLimitHint(value: string): string {
   if (Math.abs(num) >= 1_000_000) return `= ${(num / 1_000_000).toFixed(2)} Million`
   if (Math.abs(num) >= 1_000) return `= ${(num / 1_000).toFixed(2)} Thousand`
   return `= ${num.toLocaleString()}`
+}
+
+function getNonXrpAsset(poolInfo: PoolInfo) {
+  // Find the non-XRP asset to use for viewing the AMM
+  if (poolInfo.asset1.currency !== 'XRP') {
+    return {
+      currency: poolInfo.asset1.currency,
+      issuer: poolInfo.asset1.issuer || '',
+      amount: poolInfo.asset1.amount
+    }
+  }
+  return {
+    currency: poolInfo.asset2.currency,
+    issuer: poolInfo.asset2.issuer || '',
+    amount: poolInfo.asset2.amount
+  }
 }
 </script>

@@ -118,6 +118,7 @@
     <AdminAmmSlideover
       v-model="showAmmSlideover"
       :token="selectedToken"
+      @viewUser="openUserDetailsByAddress"
     />
 
     <!-- Edit User Modal -->
@@ -184,8 +185,11 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import API from '~/server/client'
+
+const route = useRoute()
+const router = useRouter()
 
 interface User {
   xrplAddress: string
@@ -219,6 +223,49 @@ const editName = ref('')
 const saving = ref(false)
 const deleting = ref(false)
 
+// Watch URL query changes to open slideovers
+watch(() => route.query, async (query) => {
+  if (query.user && typeof query.user === 'string') {
+    const user = users.value.find(u => u.xrplAddress === query.user)
+    if (user) {
+      selectedUser.value = user
+      showUserSlideover.value = true
+    } else {
+      // User might not be in our list, create a minimal user object
+      selectedUser.value = { xrplAddress: query.user, name: query.user.slice(0, 8) + '...', createdAt: '' }
+      showUserSlideover.value = true
+    }
+  } else {
+    showUserSlideover.value = false
+  }
+
+  if (query.amm && typeof query.amm === 'string') {
+    // AMM query format: currency:issuer
+    const [currency, issuer] = query.amm.split(':')
+    if (currency && issuer) {
+      selectedToken.value = { currency, issuer, amount: '0' }
+      showAmmSlideover.value = true
+    }
+  } else {
+    showAmmSlideover.value = false
+  }
+}, { immediate: true })
+
+// Sync slideover state back to URL
+watch(showUserSlideover, (open) => {
+  if (!open && route.query.user) {
+    const { user, ...rest } = route.query
+    router.replace({ query: rest })
+  }
+})
+
+watch(showAmmSlideover, (open) => {
+  if (!open && route.query.amm) {
+    const { amm, ...rest } = route.query
+    router.replace({ query: rest })
+  }
+})
+
 onMounted(async () => {
   await refreshUsers()
 })
@@ -234,11 +281,25 @@ async function refreshUsers() {
 function openUserDetails(user: User) {
   selectedUser.value = user
   showUserSlideover.value = true
+  router.replace({ query: { ...route.query, user: user.xrplAddress } })
+}
+
+function openUserDetailsByAddress(address: string) {
+  const user = users.value.find(u => u.xrplAddress === address)
+  if (user) {
+    openUserDetails(user)
+  } else {
+    // User might not be in our list, create a minimal user object
+    selectedUser.value = { xrplAddress: address, name: address.slice(0, 8) + '...', createdAt: '' }
+    showUserSlideover.value = true
+    router.replace({ query: { ...route.query, user: address } })
+  }
 }
 
 function openAmmDetails(token: Token) {
   selectedToken.value = token
   showAmmSlideover.value = true
+  router.replace({ query: { ...route.query, amm: `${token.currency}:${token.issuer}` } })
 }
 
 function openEditModal(user: User) {

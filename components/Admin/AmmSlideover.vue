@@ -58,19 +58,40 @@
         <div class="mb-6 bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
           <div class="text-xs text-gray-500 uppercase mb-3">Swap</div>
           <div class="space-y-3">
-            <div class="flex items-center gap-2">
-              <UInput
-                v-model="swapAmount"
-                type="number"
-                placeholder="Amount"
-                class="flex-1"
-              />
-              <USelect
-                v-model="currencyFrom"
-                :options="currencyOptions"
-                class="w-24"
-              />
+            <!-- You Pay -->
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs text-gray-500">You pay</span>
+                <span class="text-xs text-gray-400">
+                  Balance: {{ userBalanceFrom }}
+                  <button
+                    v-if="userBalanceFromNum > 0"
+                    class="text-primary-500 hover:text-primary-400 ml-1"
+                    @click="swapAmount = userBalanceFromNum.toString()"
+                  >
+                    Max
+                  </button>
+                </span>
+              </div>
+              <div class="flex items-center gap-2">
+                <UInput
+                  v-model="swapAmount"
+                  type="number"
+                  placeholder="0"
+                  class="flex-1"
+                  :ui="{ wrapper: insufficientBalance ? 'ring-2 ring-red-500 rounded-full' : '' }"
+                />
+                <USelect
+                  v-model="currencyFrom"
+                  :options="currencyOptions"
+                  class="w-24"
+                />
+              </div>
+              <div v-if="insufficientBalance" class="text-xs text-red-500 mt-1">
+                Insufficient balance
+              </div>
             </div>
+
             <div class="flex justify-center">
               <UButton
                 color="gray"
@@ -80,22 +101,28 @@
                 @click="swapCurrencies"
               />
             </div>
-            <div class="flex items-center gap-2">
-              <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-md px-3 py-2 text-gray-600 dark:text-gray-400">
-                {{ estimatedOutput }}
-              </div>
-              <div class="w-24 text-center font-medium text-gray-800 dark:text-white">
-                {{ currencyTo }}
+
+            <!-- You Receive -->
+            <div>
+              <div class="text-xs text-gray-500 mb-1">You receive</div>
+              <div class="flex items-center gap-2">
+                <div class="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full px-4 py-2 text-gray-600 dark:text-gray-400">
+                  {{ estimatedOutput }}
+                </div>
+                <div class="w-24 text-center font-medium text-gray-800 dark:text-white">
+                  {{ currencyTo }}
+                </div>
               </div>
             </div>
+
             <UButton
               color="primary"
               block
               :loading="swapping"
-              :disabled="!swapAmount || swapping"
+              :disabled="!swapAmount || swapping || insufficientBalance"
               @click="executeSwap"
             >
-              Swap
+              Swap {{ currencyFrom }} for {{ currencyTo }}
             </UButton>
           </div>
         </div>
@@ -107,12 +134,11 @@
             <div
               v-for="holder in amm.lpToken.holders"
               :key="holder.account"
-              class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+              class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+              @click="emit('viewUser', holder.account)"
             >
               <div class="flex items-center justify-between mb-1">
-                <span class="font-mono text-xs text-gray-600 dark:text-gray-400 truncate max-w-[180px]">
-                  {{ holder.account }}
-                </span>
+                <ColoredAddress :address="holder.account" variant="text" class="text-xs" />
                 <span class="text-sm font-medium text-gray-800 dark:text-white">{{ holder.share }}</span>
               </div>
               <div class="text-xs text-gray-500">{{ formatAmount(holder.amount.toString()) }} LP</div>
@@ -178,6 +204,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: boolean]
+  'viewUser': [address: string]
 }>()
 
 const isOpen = computed({
@@ -195,6 +222,15 @@ const swapAmount = ref('')
 const currencyFrom = ref('')
 const currencyTo = ref('')
 
+// User balance state
+interface UserToken {
+  currency: string
+  amount: string
+  issuer?: string
+}
+const userTokens = ref<UserToken[]>([])
+const userXrpBalance = ref('0')
+
 // QR Modal state
 const showQrModal = ref(false)
 const qrCodeSrc = ref('')
@@ -203,6 +239,26 @@ const mobileUrl = ref('')
 const currencyOptions = computed(() => {
   if (!amm.value) return []
   return [amm.value.pool1.currency, amm.value.pool2.currency]
+})
+
+const userBalanceFromNum = computed(() => {
+  if (!currencyFrom.value) return 0
+  if (currencyFrom.value === 'XRP') {
+    return parseFloat(userXrpBalance.value) || 0
+  }
+  const token = userTokens.value.find(t => t.currency === currencyFrom.value)
+  return token ? parseFloat(token.amount) : 0
+})
+
+const userBalanceFrom = computed(() => {
+  return formatAmount(userBalanceFromNum.value.toString())
+})
+
+const insufficientBalance = computed(() => {
+  if (!swapAmount.value) return false
+  const amount = parseFloat(swapAmount.value)
+  if (isNaN(amount)) return false
+  return amount > userBalanceFromNum.value
 })
 
 const estimatedOutput = computed(() => {

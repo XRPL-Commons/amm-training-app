@@ -43,6 +43,11 @@ const actions = [
     method: 'GET'
   },
   {
+    name: 'getAmmByAccount',
+    path: '/api/blockchain/amm/account',
+    method: 'GET'
+  },
+  {
     name: 'tradeAmm',
     path: '/api/blockchain/amm',
     method: 'POST'
