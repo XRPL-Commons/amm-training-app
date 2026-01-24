@@ -86,15 +86,17 @@ const selectedToken = ref<{ currency: string; issuer: string; amount: string } |
 // Watch URL query changes to open slideovers
 watch(() => route.query, async (query) => {
   if (query.user && typeof query.user === 'string') {
-    const user = users.value.find(u => u.xrplAddress === query.user)
-    if (user) {
-      selectedUser.value = user
-      showUserSlideover.value = true
-    } else {
-      // User might not be in our list, create a minimal user object
-      selectedUser.value = { xrplAddress: query.user, name: query.user.slice(0, 8) + '...' }
-      showUserSlideover.value = true
+    // Only update if different user
+    if (selectedUser.value?.xrplAddress !== query.user) {
+      const user = users.value.find(u => u.xrplAddress === query.user)
+      if (user) {
+        selectedUser.value = user
+      } else {
+        // User might not be in our list, create a minimal user object
+        selectedUser.value = { xrplAddress: query.user, name: query.user.slice(0, 8) + '...' }
+      }
     }
+    showUserSlideover.value = true
   } else {
     showUserSlideover.value = false
   }
@@ -103,7 +105,10 @@ watch(() => route.query, async (query) => {
     // AMM query format: currency:issuer
     const [currency, issuer] = query.amm.split(':')
     if (currency && issuer) {
-      selectedToken.value = { currency, issuer, amount: '0' }
+      // Only update if different token
+      if (selectedToken.value?.currency !== currency || selectedToken.value?.issuer !== issuer) {
+        selectedToken.value = { currency, issuer, amount: '0' }
+      }
       showAmmSlideover.value = true
     }
   } else {
@@ -154,7 +159,9 @@ function openUserDetailsByAddress(address: string) {
   }
 }
 
-function openAmmDetails(token: { currency: string; issuer: string; amount: string }) {
+async function openAmmDetails(token: { currency: string; issuer: string; amount: string }) {
+  showUserSlideover.value = false
+  await nextTick()
   selectedToken.value = token
   showAmmSlideover.value = true
   router.replace({ query: { ...route.query, amm: `${token.currency}:${token.issuer}` } })

@@ -1,19 +1,18 @@
 <template>
   <USlideover v-model="isOpen" :ui="{ width: 'max-w-md' }">
-    <div class="p-6 h-full overflow-y-auto">
-      <!-- Header -->
-      <div class="flex items-center justify-between mb-6">
-        <h2 class="text-xl font-title text-gray-800 dark:text-white">{{ user?.name }}</h2>
-        <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="isOpen = false" />
+    <div class="h-full flex flex-col">
+      <!-- Fixed Header -->
+      <div class="p-6 pb-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-xl font-title text-gray-800 dark:text-white">{{ user?.name }}</h2>
+          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="isOpen = false" />
+        </div>
+        <ColoredAddress v-if="user?.xrplAddress" :address="user.xrplAddress" variant="boxes" />
       </div>
 
-      <!-- Address -->
-      <div class="mb-6">
-        <div class="text-xs text-gray-500 uppercase mb-1">Address</div>
-        <ColoredAddress v-if="user?.xrplAddress" :address="user.xrplAddress" />
-      </div>
-
-      <!-- Account Info -->
+      <!-- Scrollable Content -->
+      <div class="p-6 pt-4 flex-1 overflow-y-auto">
+        <!-- Account Info -->
       <div class="mb-6" v-if="accountInfo">
         <div class="text-xs text-gray-500 uppercase mb-2">XRP Balance</div>
         <div class="text-2xl font-bold text-gray-800 dark:text-white">
@@ -23,17 +22,7 @@
 
       <!-- Tokens -->
       <div>
-        <div class="flex items-center justify-between mb-3">
-          <div class="text-xs text-gray-500 uppercase">Tokens</div>
-          <UButton
-            v-if="tokens.length > 0"
-            color="gray"
-            variant="ghost"
-            size="xs"
-            icon="i-heroicons-arrow-path"
-            @click="loadTokens"
-          />
-        </div>
+        <div class="text-xs text-gray-500 uppercase mb-3">Tokens</div>
 
         <div v-if="loading" class="text-center py-8 text-gray-500">
           <Icon name="heroicons:arrow-path" class="w-6 h-6 animate-spin" />
@@ -60,7 +49,7 @@
             <div class="flex gap-2">
               <UButton
                 size="xs"
-                color="gray"
+                color="primary"
                 variant="soft"
                 icon="i-heroicons-arrow-path-rounded-square"
                 @click="$emit('viewAmm', token)"
@@ -70,12 +59,12 @@
               <UButton
                 size="xs"
                 color="primary"
-                variant="soft"
-                icon="i-heroicons-pencil-square"
+                variant="ghost"
+                :icon="parseFloat(token.limit) === 0 ? 'i-heroicons-plus' : 'i-heroicons-pencil-square'"
                 @click="openLimitModal(token)"
                 :loading="trustlineLoading === token.currency"
               >
-                Edit Limit
+                Trustline
               </UButton>
             </div>
           </div>
@@ -117,6 +106,20 @@
             </div>
           </div>
         </div>
+      </div>
+      </div>
+
+      <!-- Fixed Footer -->
+      <div class="p-4 border-t border-gray-100 dark:border-gray-700 flex-shrink-0 flex justify-end">
+        <UTooltip text="Refresh">
+          <UButton
+            color="gray"
+            variant="ghost"
+            icon="i-heroicons-arrow-path"
+            @click="loadData"
+            :loading="loading"
+          />
+        </UTooltip>
       </div>
     </div>
 
