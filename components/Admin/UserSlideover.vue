@@ -49,18 +49,50 @@
           <div
             v-for="token in tokens"
             :key="`${token.currency}-${token.issuer}`"
-            class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-            @click="$emit('viewAmm', token)"
+            class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
           >
             <div class="flex items-center justify-between">
               <div class="font-medium text-gray-800 dark:text-white">{{ token.currency }}</div>
               <div class="text-gray-600 dark:text-gray-400">{{ formatAmount(token.amount) }}</div>
             </div>
-            <div class="text-xs text-gray-500 truncate mt-1">{{ token.issuer }}</div>
+            <div class="text-xs text-gray-500 truncate mt-1 mb-2">{{ token.issuer }}</div>
+            <div class="flex gap-2">
+              <UButton
+                size="xs"
+                color="gray"
+                variant="soft"
+                icon="i-heroicons-arrow-path-rounded-square"
+                @click="$emit('viewAmm', token)"
+              >
+                AMM
+              </UButton>
+              <UButton
+                size="xs"
+                color="primary"
+                variant="soft"
+                icon="i-heroicons-link"
+                @click="setTrustline(token)"
+                :loading="trustlineLoading === token.currency"
+              >
+                Trustline
+              </UButton>
+            </div>
           </div>
         </div>
       </div>
     </div>
+
+    <!-- QR Code Modal for signing -->
+    <UModal v-model="showQrModal">
+      <div class="p-6 text-center">
+        <h3 class="text-lg font-title mb-4 text-gray-800 dark:text-white">Sign with Xaman</h3>
+        <img v-if="qrCodeSrc" :src="qrCodeSrc" class="mx-auto mb-4 rounded-lg" />
+        <p class="text-sm text-gray-500 mb-4">Scan with Xaman or click below on mobile</p>
+        <UButton v-if="mobileUrl" :to="mobileUrl" external color="primary" block>
+          Open Xaman
+        </UButton>
+      </div>
+    </UModal>
   </USlideover>
 </template>
 
@@ -71,7 +103,7 @@ import API from '~/server/client'
 interface User {
   xrplAddress: string
   name: string
-  createdAt: string
+  createdAt?: string
 }
 
 interface Token {
@@ -98,6 +130,12 @@ const isOpen = computed({
 const loading = ref(false)
 const tokens = ref<Token[]>([])
 const accountInfo = ref<any>(null)
+const trustlineLoading = ref<string | null>(null)
+
+// QR Modal state
+const showQrModal = ref(false)
+const qrCodeSrc = ref('')
+const mobileUrl = ref('')
 
 watch(() => props.user, async (newUser) => {
   if (newUser) {
@@ -134,6 +172,47 @@ async function loadTokens() {
     console.error('Failed to load tokens:', error)
   } finally {
     loading.value = false
+  }
+}
+
+async function setTrustline(token: Token) {
+  if (!props.user) return
+
+  const userToken = localStorage.getItem('user_token')
+  if (!userToken) {
+    alert('Please sign in with Xaman first')
+    return
+  }
+
+  trustlineLoading.value = token.currency
+
+  try {
+    const payload = await API.createTrustline({
+      userToken,
+      account: props.user.xrplAddress,
+      issuer: token.issuer,
+      currency: token.currency
+    })
+
+    qrCodeSrc.value = payload.refs.qr_png
+    mobileUrl.value = payload.next.always
+    showQrModal.value = true
+
+    // Listen for signing
+    const ws = new WebSocket(payload.refs.websocket_status)
+    ws.onmessage = async (message) => {
+      const data = JSON.parse(message.data)
+      if (data.signed === true) {
+        showQrModal.value = false
+        ws.close()
+        await loadTokens()
+      }
+    }
+  } catch (error) {
+    console.error('Failed to create trustline:', error)
+    alert('Failed to create trustline')
+  } finally {
+    trustlineLoading.value = null
   }
 }
 

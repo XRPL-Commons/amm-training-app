@@ -28,28 +28,17 @@
           <tr>
             <th class="py-3 px-4">Name</th>
             <th class="py-3 px-4">Address</th>
-            <th class="py-3 px-4 text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="text-gray-700 dark:text-gray-300">
           <tr
             v-for="user in users"
             :key="user.xrplAddress"
-            class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
+            class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
+            @click="openUserDetails(user)"
           >
             <td class="py-3 px-4 font-medium">{{ user.name }}</td>
             <td class="py-3 px-4 font-mono text-xs text-gray-500">{{ user.xrplAddress }}</td>
-            <td class="py-3 px-4 text-right">
-              <UTooltip text="View details">
-                <UButton
-                  @click="openUserDetails(user)"
-                  color="gray"
-                  variant="ghost"
-                  size="xs"
-                  icon="i-heroicons-eye"
-                />
-              </UTooltip>
-            </td>
           </tr>
         </tbody>
       </table>
