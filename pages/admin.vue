@@ -1,6 +1,11 @@
 <template>
+  <!-- Loading -->
+  <div v-if="checkingAuth" class="flex-1 flex items-center justify-center">
+    <Icon name="heroicons:arrow-path" class="w-8 h-8 animate-spin text-gray-500" />
+  </div>
+
   <!-- Login Page -->
-  <div v-if="!isAuthenticated" class="flex-1 flex items-center justify-center px-4">
+  <div v-else-if="!isAuthenticated" class="flex-1 flex items-center justify-center px-4">
     <div class="w-full max-w-sm bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
       <div class="flex items-center gap-3 mb-6">
         <img src="/xrpl.png" class="h-8 opacity-80 hidden dark:block" />
@@ -58,13 +63,13 @@
             <UButton @click="refreshUsers" color="gray" variant="ghost" size="sm" icon="i-heroicons-arrow-path" />
           </UTooltip>
           <UTooltip text="Download backup">
-            <UButton @click="downloadBackup" color="primary" variant="ghost" size="sm" icon="i-heroicons-arrow-down-tray" />
+            <UButton @click="downloadBackup" color="gray" variant="ghost" size="sm" icon="i-heroicons-arrow-down-tray" />
           </UTooltip>
           <UTooltip text="Restore from file">
-            <UButton @click="triggerFileInput" color="orange" variant="ghost" size="sm" icon="i-heroicons-arrow-up-tray" />
+            <UButton @click="triggerFileInput" color="gray" variant="ghost" size="sm" icon="i-heroicons-arrow-up-tray" />
           </UTooltip>
           <UTooltip text="Clear all users">
-            <UButton @click="showClearModal = true" color="red" variant="ghost" size="sm" icon="i-heroicons-trash" />
+            <UButton @click="showClearModal = true" color="gray" variant="ghost" size="sm" icon="i-heroicons-trash" />
           </UTooltip>
         </div>
       </div>
@@ -101,7 +106,7 @@
               {{ user.name }}
             </td>
             <td class="py-3 px-4 cursor-pointer" @click="openUserDetails(user)">
-              <ColoredAddress :address="user.xrplAddress" variant="bars" />
+              <ColoredAddress :address="user.xrplAddress" variant="boxes" />
             </td>
             <td class="py-3 px-4 text-gray-500 text-xs">
               <div>{{ formatDate(user.createdAt) }}</div>
@@ -121,7 +126,7 @@
                 <UTooltip text="Delete user">
                   <UButton
                     @click.stop="openDeleteModal(user)"
-                    color="red"
+                    color="gray"
                     variant="ghost"
                     size="xs"
                     icon="i-heroicons-trash"
@@ -237,6 +242,8 @@ interface Token {
 
 // Auth state
 const isAuthenticated = ref(false)
+const authRequired = ref(true)
+const checkingAuth = ref(true)
 const password = ref('')
 const loginError = ref('')
 const loggingIn = ref(false)
@@ -310,6 +317,23 @@ watch(showAmmSlideover, (open) => {
 })
 
 onMounted(async () => {
+  // Check if auth is required
+  try {
+    const checkResponse = await fetch('/api/admin/check')
+    const { authRequired: required } = await checkResponse.json()
+    authRequired.value = required
+
+    if (!required) {
+      // No password configured, allow access
+      isAuthenticated.value = true
+      checkingAuth.value = false
+      await refreshUsers()
+      return
+    }
+  } catch {
+    // Assume auth required if check fails
+  }
+
   // Check if already authenticated with stored password
   const storedPassword = localStorage.getItem('admin_password')
   if (storedPassword) {
@@ -321,6 +345,7 @@ onMounted(async () => {
       })
       if (response.ok) {
         isAuthenticated.value = true
+        checkingAuth.value = false
         await refreshUsers()
         return
       } else {
@@ -331,6 +356,8 @@ onMounted(async () => {
       localStorage.removeItem('admin_password')
     }
   }
+
+  checkingAuth.value = false
 })
 
 async function login() {

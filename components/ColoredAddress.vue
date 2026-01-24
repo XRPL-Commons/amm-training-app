@@ -14,6 +14,17 @@
       :style="{ backgroundColor: getColorForChar(char) }"
     />
   </div>
+  <div v-else-if="variant === 'barsLabel'" class="inline-flex items-center gap-2">
+    <div class="inline-flex h-4 rounded-sm overflow-hidden flex-shrink-0">
+      <span
+        v-for="(char, index) in address"
+        :key="index"
+        class="w-[2px] h-full"
+        :style="{ backgroundColor: getColorForChar(char) }"
+      />
+    </div>
+    <span class="text-[10px] text-gray-400 font-mono">{{ address }}</span>
+  </div>
   <div v-else class="inline-flex">
     <span
       v-for="(char, index) in address"
@@ -32,7 +43,7 @@
 <script setup lang="ts">
 const props = withDefaults(defineProps<{
   address: string
-  variant?: 'boxes' | 'text' | 'bars'
+  variant?: 'boxes' | 'text' | 'bars' | 'barsLabel'
 }>(), {
   variant: 'boxes'
 })
@@ -49,7 +60,7 @@ chars.split('').forEach((char, index) => {
 
 function getColorForChar(char: string): string {
   const hue = charHueMap.get(char) ?? 0
-  if (props.variant === 'bars') {
+  if (props.variant === 'bars' || props.variant === 'barsLabel') {
     return `hsl(${hue}, 70%, 50%)`
   }
   return `hsl(${hue}, 55%, 28%)`

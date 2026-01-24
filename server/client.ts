@@ -85,12 +85,30 @@ type Headers = {
   [key: string]: string;
 }
 
+// Admin endpoints that require authentication
+const adminEndpoints = ['/api/users']
+
+function getAdminPassword(): string | null {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('admin_password')
+  }
+  return null
+}
+
 const api: { [key: string]: any } = {}
 actions.forEach(action => {
   api[action.name] = async (props: any) => {
     const headers: Headers = {
       'content-type': 'application/json'
-    }    
+    }
+
+    // Add admin password header for protected endpoints
+    if (adminEndpoints.some(endpoint => action.path.startsWith(endpoint))) {
+      const adminPassword = getAdminPassword()
+      if (adminPassword) {
+        headers['x-admin-password'] = adminPassword
+      }
+    }
 
     let url = action.path;
     let body = undefined;
@@ -126,9 +144,13 @@ actions.forEach(action => {
 
 // Custom methods for dynamic routes
 api.updateUser = async ({ address, name }: { address: string; name: string }) => {
+  const headers: Headers = { 'content-type': 'application/json' }
+  const adminPassword = getAdminPassword()
+  if (adminPassword) headers['x-admin-password'] = adminPassword
+
   const response = await fetch(`/api/users/${encodeURIComponent(address)}`, {
     method: 'PATCH',
-    headers: { 'content-type': 'application/json' },
+    headers,
     body: JSON.stringify({ name })
   })
   if (!response.ok) throw new Error('Failed to update user')
@@ -136,8 +158,13 @@ api.updateUser = async ({ address, name }: { address: string; name: string }) =>
 }
 
 api.deleteUser = async ({ address }: { address: string }) => {
+  const headers: Headers = { 'content-type': 'application/json' }
+  const adminPassword = getAdminPassword()
+  if (adminPassword) headers['x-admin-password'] = adminPassword
+
   const response = await fetch(`/api/users/${encodeURIComponent(address)}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers
   })
   if (!response.ok) throw new Error('Failed to delete user')
   return response.json()

@@ -36,17 +36,21 @@
           <div
             v-for="token in regularTokens"
             :key="`${token.currency}-${token.issuer}`"
-            class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
+            class="bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden"
           >
-            <div class="flex items-center justify-between">
-              <span class="font-medium text-gray-800 dark:text-white">{{ token.currency }}</span>
-              <div class="text-gray-600 dark:text-gray-400">{{ formatAmount(token.amount) }}</div>
+            <!-- Token Content -->
+            <div class="p-3">
+              <div class="flex items-center justify-between mb-2">
+                <span class="font-medium text-gray-800 dark:text-white">{{ token.currency }}</span>
+                <div class="text-gray-600 dark:text-gray-400">{{ formatAmount(token.amount) }}</div>
+              </div>
+              <ColoredAddress :address="token.issuer" variant="boxes" />
+              <div class="text-xs text-gray-400 mt-2">
+                Trustline: {{ formatAmount(token.limit) }}
+              </div>
             </div>
-            <div class="text-xs text-gray-500 truncate mt-1">{{ token.issuer }}</div>
-            <div class="text-xs text-gray-400 mt-1 mb-2">
-              Limit: {{ formatAmount(token.limit) }}
-            </div>
-            <div class="flex gap-2">
+            <!-- Token Footer -->
+            <div class="flex gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
               <UButton
                 size="xs"
                 color="primary"
@@ -79,22 +83,26 @@
           <div
             v-for="lp in lpTokensWithPool"
             :key="`${lp.currency}-${lp.issuer}`"
-            class="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3"
+            class="bg-purple-500/10 border border-purple-500/20 rounded-lg overflow-hidden"
           >
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span v-if="lp.poolInfo" class="font-medium text-gray-800 dark:text-white">
-                  {{ lp.poolInfo.asset1.currency }} / {{ lp.poolInfo.asset2.currency }}
-                </span>
-                <span v-else class="font-medium text-gray-800 dark:text-white">LP Token</span>
-                <span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400">
-                  {{ lp.poolInfo?.tradingFee || 'AMM' }}
-                </span>
+            <!-- LP Content -->
+            <div class="p-3">
+              <div class="flex items-center justify-between mb-2">
+                <div class="flex items-center gap-2">
+                  <span v-if="lp.poolInfo" class="font-medium text-gray-800 dark:text-white">
+                    {{ lp.poolInfo.asset1.currency }} / {{ lp.poolInfo.asset2.currency }}
+                  </span>
+                  <span v-else class="font-medium text-gray-800 dark:text-white">LP Token</span>
+                  <span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400">
+                    {{ lp.poolInfo?.tradingFee || 'AMM' }}
+                  </span>
+                </div>
+                <div class="text-gray-600 dark:text-gray-400">{{ formatAmount(lp.amount) }}</div>
               </div>
-              <div class="text-gray-600 dark:text-gray-400">{{ formatAmount(lp.amount) }}</div>
+              <ColoredAddress :address="lp.issuer" variant="boxes" />
             </div>
-            <div class="text-xs text-gray-500 truncate mt-1">{{ lp.issuer }}</div>
-            <div v-if="lp.poolInfo" class="flex gap-2 mt-2">
+            <!-- LP Footer -->
+            <div v-if="lp.poolInfo" class="flex gap-2 px-3 py-2 bg-purple-500/10 border-t border-purple-500/20">
               <UButton
                 size="xs"
                 color="purple"
