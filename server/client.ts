@@ -58,7 +58,22 @@ const actions = [
     path: '/api/xaman/payload',
     method: 'GET',
     secretRequired: true
-  }  
+  },
+  {
+    name: 'backupUsers',
+    path: '/api/users/backup',
+    method: 'GET'
+  },
+  {
+    name: 'restoreUsers',
+    path: '/api/users/restore',
+    method: 'POST'
+  },
+  {
+    name: 'clearUsers',
+    path: '/api/users/clear',
+    method: 'POST'
+  }
 ]
 
 type Headers = {
