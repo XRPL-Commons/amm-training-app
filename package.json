@@ -1,0 +1,28 @@
+{
+  "name": "nuxt-app",
+  "private": true,
+  "engines": {
+    "node": "20.x"
+  },
+  "scripts": {    
+    "dev": "nuxt dev"    
+  },
+  "devDependencies": {
+    "@nuxt/devtools": "latest",
+    "@nuxtjs/color-mode": "^3.3.2",
+    "@types/node": "^20.12.7",
+    "nuxt": "^3.10.3",
+    "nuxt-icon": "^0.6.10",
+    "rollup": "^4.14.0",
+    "sass": "^1.66.1"
+  },
+  "dependencies": {
+    "@nuxt/ui": "^2.14.2",
+    "dayjs": "^1.11.10",
+    "dotenv": "^16.4.5",
+    "sharp": "^0.32.5",
+    "typescript": "^5.4.5",
+    "xrpl": "^3.0.0",
+    "xumm": "^1.7.7"
+  }
+}
