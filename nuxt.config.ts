@@ -10,6 +10,7 @@ export default defineNuxtConfig({
     xrplCommonsAddress: process.env.XRPL_COMMONS_ADDRESS,
     xrplCommonsSecret: process.env.XRPL_COMMONS_SECRET,
     wssExplorer: process.env.WSS_EXPLORER,
+    adminPassword: process.env.ADMIN_PASSWORD,
     // Keys within public are also exposed client-side
     public: {
       apiBase: '/api',

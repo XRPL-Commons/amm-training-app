@@ -142,9 +142,11 @@ onMounted(async () => {
 })
 
 function openUserDetails(user: UserObject) {
+  showAmmSlideover.value = false
   selectedUser.value = user
   showUserSlideover.value = true
-  router.replace({ query: { ...route.query, user: user.xrplAddress } })
+  const { amm, ...rest } = route.query
+  router.replace({ query: { ...rest, user: user.xrplAddress } })
 }
 
 function openUserDetailsByAddress(address: string) {
@@ -153,9 +155,11 @@ function openUserDetailsByAddress(address: string) {
     openUserDetails(user)
   } else {
     // User might not be in our list, create a minimal user object
+    showAmmSlideover.value = false
     selectedUser.value = { xrplAddress: address, name: address.slice(0, 8) + '...' }
     showUserSlideover.value = true
-    router.replace({ query: { ...route.query, user: address } })
+    const { amm, ...rest } = route.query
+    router.replace({ query: { ...rest, user: address } })
   }
 }
 
@@ -164,7 +168,8 @@ async function openAmmDetails(token: { currency: string; issuer: string; amount:
   await nextTick()
   selectedToken.value = token
   showAmmSlideover.value = true
-  router.replace({ query: { ...route.query, amm: `${token.currency}:${token.issuer}` } })
+  const { user, ...rest } = route.query
+  router.replace({ query: { ...rest, amm: `${token.currency}:${token.issuer}` } })
 }
 
 function connectWallet() {

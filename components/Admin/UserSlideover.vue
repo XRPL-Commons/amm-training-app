@@ -50,21 +50,22 @@
               <UButton
                 size="xs"
                 color="primary"
-                variant="soft"
-                icon="i-heroicons-arrow-path-rounded-square"
-                @click="$emit('viewAmm', token)"
-              >
-                AMM
-              </UButton>
-              <UButton
-                size="xs"
-                color="primary"
                 variant="ghost"
                 :icon="parseFloat(token.limit) === 0 ? 'i-heroicons-plus' : 'i-heroicons-pencil-square'"
                 @click="openLimitModal(token)"
                 :loading="trustlineLoading === token.currency"
               >
                 Trustline
+              </UButton>
+              <UButton
+                v-if="token.hasAmm"
+                size="xs"
+                color="primary"
+                variant="soft"
+                icon="i-heroicons-arrow-path-rounded-square"
+                @click="$emit('viewAmm', token)"
+              >
+                AMM
               </UButton>
             </div>
           </div>
@@ -191,6 +192,7 @@ interface Token {
   amount: string
   limit: string
   isLPToken: boolean
+  hasAmm?: boolean
 }
 
 interface PoolInfo {
@@ -255,11 +257,25 @@ async function loadData() {
       API.getTokens({ xrplAddress: props.user.xrplAddress }),
       API.getAccountInfo({ xrplAddress: props.user.xrplAddress })
     ])
-    tokens.value = tokensResult
     accountInfo.value = accountResult
 
-    // Fetch pool info for LP tokens
+    // Check AMM existence for regular tokens
+    const regularTokens = tokensResult.filter((t: Token) => !t.isLPToken)
+    const ammCheckPromises = regularTokens.map(async (token: Token) => {
+      try {
+        const amm = await API.getAmm({ issuer: token.issuer, currency: token.currency })
+        return { ...token, hasAmm: !!amm }
+      } catch {
+        return { ...token, hasAmm: false }
+      }
+    })
+    const tokensWithAmmCheck = await Promise.all(ammCheckPromises)
+
+    // Combine with LP tokens
     const lpTokens = tokensResult.filter((t: Token) => t.isLPToken)
+    tokens.value = [...tokensWithAmmCheck, ...lpTokens]
+
+    // Fetch pool info for LP tokens
     const poolInfoPromises = lpTokens.map(async (token: Token) => {
       const poolInfo = await API.getAmmByAccount({ ammAccount: token.issuer })
       return { ...token, poolInfo }

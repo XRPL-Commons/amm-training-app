@@ -1,6 +1,9 @@
 import { GetUsers } from '~/server/connectors/memory'
+import { requireAdminAuth } from '~/server/utils/adminAuth'
 
 export default defineEventHandler(async (event) => {
+  await requireAdminAuth(event)
+
   try {
     const users = await GetUsers()
     return {

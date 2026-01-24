@@ -1,6 +1,9 @@
 import { DeleteUser } from '~/server/connectors/memory'
+import { requireAdminAuth } from '~/server/utils/adminAuth'
 
 export default defineEventHandler(async (event) => {
+  await requireAdminAuth(event)
+
   try {
     const address = getRouterParam(event, 'address')
 

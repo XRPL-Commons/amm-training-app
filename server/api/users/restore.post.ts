@@ -1,7 +1,10 @@
 import { clearMemory, AddUser } from '~/server/connectors/memory'
 import type { User } from '~/server/connectors/memory'
+import { requireAdminAuth } from '~/server/utils/adminAuth'
 
 export default defineEventHandler(async (event) => {
+  await requireAdminAuth(event)
+
   try {
     const body = await readBody(event)
 

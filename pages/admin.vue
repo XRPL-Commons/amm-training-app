@@ -1,5 +1,37 @@
 <template>
-  <div class="w-full max-w-4xl mx-auto px-4 py-8">
+  <!-- Login Page -->
+  <div v-if="!isAuthenticated" class="flex-1 flex items-center justify-center px-4">
+    <div class="w-full max-w-sm bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+      <div class="flex items-center gap-3 mb-6">
+        <img src="/xrpl.png" class="h-8 opacity-80 hidden dark:block" />
+        <img src="/xrplb.png" class="h-8 opacity-80 dark:hidden" />
+        <h1 class="text-xl font-title text-gray-800 dark:text-white">Admin Login</h1>
+      </div>
+      <form @submit.prevent="login">
+        <UFormGroup label="Password" :error="loginError">
+          <UInput
+            v-model="password"
+            type="password"
+            placeholder="Enter admin password"
+            size="lg"
+            autofocus
+          />
+        </UFormGroup>
+        <UButton
+          type="submit"
+          color="primary"
+          block
+          size="lg"
+          class="mt-4"
+          :loading="loggingIn"
+        >
+          Login
+        </UButton>
+      </form>
+    </div>
+  </div>
+
+  <div v-else class="w-full max-w-4xl mx-auto px-4 py-8">
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
       <div class="flex items-center gap-3">
@@ -203,6 +235,12 @@ interface Token {
   amount: string
 }
 
+// Auth state
+const isAuthenticated = ref(false)
+const password = ref('')
+const loginError = ref('')
+const loggingIn = ref(false)
+
 const users = ref<User[]>([])
 const restoreStatus = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
@@ -272,8 +310,54 @@ watch(showAmmSlideover, (open) => {
 })
 
 onMounted(async () => {
-  await refreshUsers()
+  // Check if already authenticated with stored password
+  const storedPassword = localStorage.getItem('admin_password')
+  if (storedPassword) {
+    try {
+      const response = await fetch('/api/admin/verify', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password: storedPassword })
+      })
+      if (response.ok) {
+        isAuthenticated.value = true
+        await refreshUsers()
+        return
+      } else {
+        // Password changed, clear stored password
+        localStorage.removeItem('admin_password')
+      }
+    } catch {
+      localStorage.removeItem('admin_password')
+    }
+  }
 })
+
+async function login() {
+  loginError.value = ''
+  loggingIn.value = true
+
+  try {
+    const response = await fetch('/api/admin/verify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ password: password.value })
+    })
+
+    if (response.ok) {
+      isAuthenticated.value = true
+      localStorage.setItem('admin_password', password.value)
+      password.value = ''
+      await refreshUsers()
+    } else {
+      loginError.value = 'Invalid password'
+    }
+  } catch (error) {
+    loginError.value = 'Failed to verify password'
+  } finally {
+    loggingIn.value = false
+  }
+}
 
 async function refreshUsers() {
   try {
@@ -284,9 +368,11 @@ async function refreshUsers() {
 }
 
 function openUserDetails(user: User) {
+  showAmmSlideover.value = false
   selectedUser.value = user
   showUserSlideover.value = true
-  router.replace({ query: { ...route.query, user: user.xrplAddress } })
+  const { amm, ...rest } = route.query
+  router.replace({ query: { ...rest, user: user.xrplAddress } })
 }
 
 function openUserDetailsByAddress(address: string) {
@@ -295,9 +381,11 @@ function openUserDetailsByAddress(address: string) {
     openUserDetails(user)
   } else {
     // User might not be in our list, create a minimal user object
+    showAmmSlideover.value = false
     selectedUser.value = { xrplAddress: address, name: address.slice(0, 8) + '...', createdAt: '' }
     showUserSlideover.value = true
-    router.replace({ query: { ...route.query, user: address } })
+    const { amm, ...rest } = route.query
+    router.replace({ query: { ...rest, user: address } })
   }
 }
 
@@ -306,7 +394,8 @@ async function openAmmDetails(token: Token) {
   await nextTick()
   selectedToken.value = token
   showAmmSlideover.value = true
-  router.replace({ query: { ...route.query, amm: `${token.currency}:${token.issuer}` } })
+  const { user, ...rest } = route.query
+  router.replace({ query: { ...rest, amm: `${token.currency}:${token.issuer}` } })
 }
 
 function openEditModal(user: User) {

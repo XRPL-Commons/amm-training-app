@@ -6,7 +6,7 @@
         <div class="flex items-center justify-between">
           <div>
             <h2 class="text-xl font-title text-gray-800 dark:text-white">
-              {{ amm?.pool1?.currency }}/{{ amm?.pool2?.currency }}
+              {{ amm ? `${amm.pool1.currency}/${amm.pool2.currency}` : (token?.currency ? `${token.currency}/XRP` : 'AMM Pool') }}
             </h2>
             <div class="text-sm text-gray-500">AMM Pool</div>
           </div>

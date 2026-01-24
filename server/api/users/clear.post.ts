@@ -1,6 +1,9 @@
 import { clearMemory } from '~/server/connectors/memory'
+import { requireAdminAuth } from '~/server/utils/adminAuth'
 
 export default defineEventHandler(async (event) => {
+  await requireAdminAuth(event)
+
   try {
     clearMemory()
     return { cleared: true }

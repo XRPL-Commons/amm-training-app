@@ -18,7 +18,7 @@
     <span
       v-for="(char, index) in address"
       :key="index"
-      class="inline-flex items-center justify-center w-2.5 h-3.5 text-[9px] font-mono font-medium first:rounded-l last:rounded-r"
+      class="inline-flex items-center justify-center w-[7px] h-3 text-[8px] font-mono font-medium first:rounded-l last:rounded-r"
       :style="{
         backgroundColor: getColorForChar(char),
         color: '#fff'

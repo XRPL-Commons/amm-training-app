@@ -1,4 +1,5 @@
 import { GetUsers } from '~/server/connectors/memory'
+import { requireAdminAuth } from '~/server/utils/adminAuth'
 
 const getUsers = async () => {
   // list existing users
@@ -7,7 +8,9 @@ const getUsers = async () => {
 }
 
 export default defineEventHandler(async (event) => {
-  try {    
+  await requireAdminAuth(event)
+
+  try {
     return getUsers()
   } catch (e) {
     throw createError({
