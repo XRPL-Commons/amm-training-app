@@ -7,7 +7,6 @@
 .cache
 dist
 db
-data
 logs
 
 # Node dependencies
