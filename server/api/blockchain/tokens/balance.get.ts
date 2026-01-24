@@ -28,10 +28,8 @@ const getTokenBalance = async ({ xrplAddress, issuer, currency }: { xrplAddress:
       }));
     }
 
-    console.log('Token:', token);
     return token;
   } catch(e) {
-    console.log(e)
     throw createError({
       status: 500,
       statusMessage: 'Unable to fetch account info'
@@ -46,7 +44,6 @@ export default defineEventHandler(async (event) => {
     const { xrplAddress, issuer, currency }: { xrplAddress: string, issuer: string, currency: string } = getQuery(event)
     return await getTokenBalance({ xrplAddress, issuer, currency })    
   } catch (e) {
-    console.error(e)
     throw createError({
       status: 500,
       statusMessage: 'Unable to fetch token balance'

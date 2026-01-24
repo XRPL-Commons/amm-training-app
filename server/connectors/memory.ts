@@ -14,14 +14,10 @@ export const AddUser = async (userObject: User) => {
   );
 
   if (userExists) {
-    console.error('User already exists');
     throw new Error('User already exists');
   }
 
   users.push(userObject);
-
-  console.log(`New User added with address: ${userObject.xrplAddress}`);
-  console.log(userObject);
   return userObject;
 };
 
@@ -38,7 +34,6 @@ export const GetUsers = async (
     result = result.filter((user) => user.name === name);
   }
 
-  console.log(result);
   return result;
 };
 

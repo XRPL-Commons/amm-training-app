@@ -31,20 +31,17 @@ const tradeAmm = async ({ userToken, account, currency, issuer }:
         },        
       }
     } as any, true);
-    console.log(payload)
     return payload;
   } catch (error: any) {
-    console.error(error);
     throw createError({
       status: 500,
-      statusMessage: error.toString()
+      statusMessage: 'Failed to create trustline payload'
     })
   }
 }
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    console.log('tradeAmm', body)
     return await tradeAmm({ 
         userToken: body.userToken, 
         account: body.account,         

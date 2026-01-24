@@ -11,10 +11,6 @@ export function getXumm() {
 
 export function getWallet() {
     const wallet = Wallet.fromSeed(process.env.XRPL_COMMONS_SECRET || '');
-
-    // console.log(`Wallet address: ${wallet.address}`);
-    // console.log(`Wallet public key: ${wallet.publicKey}`);
-    // console.log(`Wallet private key: ${wallet.privateKey}`);
     return wallet
 }
 

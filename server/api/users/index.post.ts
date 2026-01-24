@@ -4,11 +4,9 @@ import { AddUser, GetUsers } from '~/server/connectors/memory'
 import type { User } from '~/server/connectors/memory'
 
 export const createUser = async ({ xrplAddress, name }: { xrplAddress: string, name: string }) => {
-    console.log('createUser', xrplAddress, name)
     try {
         // Get User object if exists
         const users = await GetUsers(xrplAddress, name);
-        console.log(users)
         if (users && users.length > 0) {
             throw createError({
                 statusCode: 400,
@@ -25,10 +23,9 @@ export const createUser = async ({ xrplAddress, name }: { xrplAddress: string, n
         await AddUser(userObject);
         return {};
     } catch (error: any) {
-        console.error(error);
         throw createError({
             status: 500,
-            statusMessage: error.toString()
+            statusMessage: 'Failed to create user'
         })
     }
 }

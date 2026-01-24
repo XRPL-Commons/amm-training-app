@@ -54,7 +54,6 @@ const tradeAmm = async ({ userToken, buyer, currencyFrom, currencyFromPoolSize, 
       },
       Flags: PaymentFlags.tfPartialPayment
     }
-    console.log(txjson);
     const payload = await xumm.payload?.create({
       user_token: userToken, // Doc: https://docs.xumm.dev/concepts/payloads-sign-requests/delivery/push
       txjson: txjson
@@ -64,17 +63,15 @@ const tradeAmm = async ({ userToken, buyer, currencyFrom, currencyFromPoolSize, 
 
     return payload;
   } catch (error: any) {
-    console.error(error);
     throw createError({
       status: 500,
-      statusMessage: error.toString()
+      statusMessage: 'Failed to create AMM trade payload'
     })
   }
 }
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    console.log('tradeAmm', body)
     return await tradeAmm({ 
         userToken: body.userToken, 
         buyer: body.buyer, 

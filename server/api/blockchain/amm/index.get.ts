@@ -47,7 +47,6 @@ const getAmm = async ({ issuer, currency }: { issuer: string, currency: string }
 
     return amm
   } catch(e) {
-    console.log(e)
     throw createError({
       status: 500,
       statusMessage: 'Unable to fetch amm'
@@ -60,7 +59,6 @@ export default defineEventHandler(async (event) => {
     const { issuer, currency }: { issuer: string, currency: string } = getQuery(event)
     return await getAmm({ issuer, currency })    
   } catch (e) {
-    console.error(e)
     throw createError({
       status: 500,
       statusMessage: 'Unable to fetch tokens'

@@ -13,13 +13,11 @@ export default defineEventHandler(async (event) => {
                 TransactionType: "SignIn",
             },
         });
-        console.log(payload)
         return payload
     } catch (error: any) {
-        console.error(error);
         throw createError({
             status: 500,
-            statusMessage: error.toString()
+            statusMessage: 'Failed to create sign-in payload'
         })
     }
 })
