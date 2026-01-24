@@ -118,4 +118,24 @@ actions.forEach(action => {
     }
   }
 })
+
+// Custom methods for dynamic routes
+api.updateUser = async ({ address, name }: { address: string; name: string }) => {
+  const response = await fetch(`/api/users/${encodeURIComponent(address)}`, {
+    method: 'PATCH',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ name })
+  })
+  if (!response.ok) throw new Error('Failed to update user')
+  return response.json()
+}
+
+api.deleteUser = async ({ address }: { address: string }) => {
+  const response = await fetch(`/api/users/${encodeURIComponent(address)}`, {
+    method: 'DELETE'
+  })
+  if (!response.ok) throw new Error('Failed to delete user')
+  return response.json()
+}
+
 export default api

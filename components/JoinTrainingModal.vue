@@ -1,14 +1,29 @@
-<template>  
-  <UModal v-model="isOpen" class="">
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }" class="text-center">
-      <span class="absolute top-0 right-0 p-4 cursor-pointer" @click="closeModal">&times;</span>
-      <div class="font-title mb-4">Fill the details</div>
-      <div class="flex flex-col items-center space-y-4">
-        <UInput v-model="xrplAddress" placeholder="XRPL Address" disabled />
-        <UInput v-model="name" placeholder="Name" />
-        <UButton @click="joinTraining">Join</UButton>
+<template>
+  <UModal v-model="isOpen">
+    <div class="p-6">
+      <!-- Header -->
+      <div class="flex items-center justify-between mb-6">
+        <h3 class="text-lg font-title text-gray-800 dark:text-white">Join Training</h3>
+        <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="closeModal" />
       </div>
-    </UCard>
+
+      <!-- Content -->
+      <div class="space-y-4">
+        <UFormGroup label="XRPL Address">
+          <ColoredAddress v-if="xrplAddress" :address="xrplAddress" />
+        </UFormGroup>
+
+        <UFormGroup label="Name">
+          <UInput v-model="name" placeholder="Enter your name" />
+        </UFormGroup>
+      </div>
+
+      <!-- Footer -->
+      <div class="flex justify-end gap-2 mt-6">
+        <UButton color="gray" variant="soft" @click="closeModal">Cancel</UButton>
+        <UButton color="primary" @click="joinTraining">Join</UButton>
+      </div>
+    </div>
   </UModal>
 </template>
 

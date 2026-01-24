@@ -1,8 +1,7 @@
-import { OfferCreateFlags } from "xrpl";
 import { convertStringToHexPadded, getXumm } from "~/server/utils";
 
-const tradeAmm = async ({ userToken, account, currency, issuer }: 
-    { userToken: string, account: string, currency: string, issuer: string }) => {
+const createTrustline = async ({ userToken, account, currency, issuer, limit }:
+    { userToken: string, account: string, currency: string, issuer: string, limit?: string }) => {
 
   if (!userToken) {
     throw createError({
@@ -12,23 +11,20 @@ const tradeAmm = async ({ userToken, account, currency, issuer }:
   }
 
   try {
-    // let orderBuy = convertSideToBoolean(side);   
-    
-    let xumm = getXumm();  
+    let xumm = getXumm();
 
-    await xumm?.ping()    
+    await xumm?.ping()
 
-    // Could try with Payment as well easier I think
     const payload = await xumm.payload?.create({
-      user_token: userToken, // Doc: https://docs.xumm.dev/concepts/payloads-sign-requests/delivery/push
+      user_token: userToken,
       txjson: {
         TransactionType: "TrustSet",
         Account: account,
         LimitAmount: {
             issuer: issuer,
             currency: convertStringToHexPadded(currency),
-            value: "1000000000000000",
-        },        
+            value: limit || "1000000000000000",
+        },
       }
     } as any, true);
     return payload;
@@ -42,10 +38,11 @@ const tradeAmm = async ({ userToken, account, currency, issuer }:
 
 export default defineEventHandler(async (event) => {
     const body = await readBody(event)
-    return await tradeAmm({ 
-        userToken: body.userToken, 
-        account: body.account,         
-        currency: body.currency, 
-        issuer: body.issuer,         
+    return await createTrustline({
+        userToken: body.userToken,
+        account: body.account,
+        currency: body.currency,
+        issuer: body.issuer,
+        limit: body.limit,
     })
 })

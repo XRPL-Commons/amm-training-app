@@ -38,7 +38,7 @@
             @click="openUserDetails(user)"
           >
             <td class="py-3 px-4 font-medium">{{ user.name }}</td>
-            <td class="py-3 px-4 font-mono text-xs text-gray-500">{{ user.xrplAddress }}</td>
+            <td class="py-3 px-4"><ColoredAddress :address="user.xrplAddress" /></td>
           </tr>
         </tbody>
       </table>

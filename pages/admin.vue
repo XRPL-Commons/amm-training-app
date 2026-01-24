@@ -55,19 +55,48 @@
           <tr>
             <th class="py-3 px-4">Name</th>
             <th class="py-3 px-4">Address</th>
-            <th class="py-3 px-4 text-right">Joined</th>
+            <th class="py-3 px-4">Joined</th>
+            <th class="py-3 px-4 text-right">Actions</th>
           </tr>
         </thead>
         <tbody class="text-gray-700 dark:text-gray-300">
           <tr
             v-for="user in users"
             :key="user.xrplAddress"
-            class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
-            @click="openUserDetails(user)"
+            class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
           >
-            <td class="py-3 px-4 font-medium">{{ user.name }}</td>
-            <td class="py-3 px-4 font-mono text-xs text-gray-500">{{ user.xrplAddress }}</td>
-            <td class="py-3 px-4 text-right text-gray-500">{{ formatDate(user.createdAt) }}</td>
+            <td class="py-3 px-4 font-medium cursor-pointer" @click="openUserDetails(user)">
+              {{ user.name }}
+            </td>
+            <td class="py-3 px-4 cursor-pointer" @click="openUserDetails(user)">
+              <ColoredAddress :address="user.xrplAddress" variant="text" class="text-xs" />
+            </td>
+            <td class="py-3 px-4 text-gray-500 text-xs">
+              <div>{{ formatDate(user.createdAt) }}</div>
+              <div class="text-gray-400">{{ formatTime(user.createdAt) }}</div>
+            </td>
+            <td class="py-3 px-4 text-right">
+              <div class="flex items-center justify-end gap-1">
+                <UTooltip text="Edit name">
+                  <UButton
+                    @click.stop="openEditModal(user)"
+                    color="gray"
+                    variant="ghost"
+                    size="xs"
+                    icon="i-heroicons-pencil"
+                  />
+                </UTooltip>
+                <UTooltip text="Delete user">
+                  <UButton
+                    @click.stop="openDeleteModal(user)"
+                    color="red"
+                    variant="ghost"
+                    size="xs"
+                    icon="i-heroicons-trash"
+                  />
+                </UTooltip>
+              </div>
+            </td>
           </tr>
         </tbody>
       </table>
@@ -91,7 +120,49 @@
       :token="selectedToken"
     />
 
-    <!-- Clear Confirmation Modal -->
+    <!-- Edit User Modal -->
+    <UModal v-model="showEditModal">
+      <div class="p-6">
+        <h3 class="text-lg font-title text-gray-900 dark:text-white mb-4">Edit User</h3>
+        <div class="mb-4">
+          <div class="text-xs text-gray-500 mb-1">Address</div>
+          <div v-if="editingUser">
+            <ColoredAddress :address="editingUser.xrplAddress" variant="boxes" />
+          </div>
+        </div>
+        <UFormGroup label="Name">
+          <UInput v-model="editName" placeholder="Enter name" />
+        </UFormGroup>
+        <div class="flex justify-end gap-2 mt-6">
+          <UButton color="gray" variant="soft" @click="showEditModal = false">Cancel</UButton>
+          <UButton color="primary" @click="saveUserName" :loading="saving">Save</UButton>
+        </div>
+      </div>
+    </UModal>
+
+    <!-- Delete User Modal -->
+    <UModal v-model="showDeleteModal">
+      <div class="p-6">
+        <div class="flex items-center gap-3 mb-4">
+          <div class="flex-shrink-0 w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+            <Icon name="heroicons:exclamation-triangle" class="w-5 h-5 text-red-600 dark:text-red-400" />
+          </div>
+          <h3 class="text-lg font-title text-gray-900 dark:text-white">Delete user?</h3>
+        </div>
+        <p class="text-gray-600 dark:text-gray-400 mb-2">
+          Are you sure you want to delete <strong>{{ deletingUser?.name }}</strong>?
+        </p>
+        <div v-if="deletingUser" class="mb-6">
+          <ColoredAddress :address="deletingUser.xrplAddress" variant="boxes" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <UButton color="gray" variant="soft" @click="showDeleteModal = false">Cancel</UButton>
+          <UButton color="red" @click="deleteUser" :loading="deleting">Delete</UButton>
+        </div>
+      </div>
+    </UModal>
+
+    <!-- Clear All Modal -->
     <UModal v-model="showClearModal">
       <div class="p-6">
         <div class="flex items-center gap-3 mb-4">
@@ -104,7 +175,7 @@
           This will remove all {{ users.length }} users. This action cannot be undone.
         </p>
         <div class="flex justify-end gap-2">
-          <UButton color="gray" @click="showClearModal = false">Cancel</UButton>
+          <UButton color="gray" variant="soft" @click="showClearModal = false">Cancel</UButton>
           <UButton color="red" @click="clearAllUsers">Clear All</UButton>
         </div>
       </div>
@@ -140,6 +211,13 @@ const selectedToken = ref<Token | null>(null)
 
 // Modal state
 const showClearModal = ref(false)
+const showEditModal = ref(false)
+const showDeleteModal = ref(false)
+const editingUser = ref<User | null>(null)
+const deletingUser = ref<User | null>(null)
+const editName = ref('')
+const saving = ref(false)
+const deleting = ref(false)
 
 onMounted(async () => {
   await refreshUsers()
@@ -161,6 +239,50 @@ function openUserDetails(user: User) {
 function openAmmDetails(token: Token) {
   selectedToken.value = token
   showAmmSlideover.value = true
+}
+
+function openEditModal(user: User) {
+  editingUser.value = user
+  editName.value = user.name
+  showEditModal.value = true
+}
+
+function openDeleteModal(user: User) {
+  deletingUser.value = user
+  showDeleteModal.value = true
+}
+
+async function saveUserName() {
+  if (!editingUser.value || !editName.value.trim()) return
+
+  saving.value = true
+  try {
+    await API.updateUser({
+      address: editingUser.value.xrplAddress,
+      name: editName.value.trim()
+    })
+    showEditModal.value = false
+    await refreshUsers()
+  } catch (error) {
+    alert('Failed to update user name')
+  } finally {
+    saving.value = false
+  }
+}
+
+async function deleteUser() {
+  if (!deletingUser.value) return
+
+  deleting.value = true
+  try {
+    await API.deleteUser({ address: deletingUser.value.xrplAddress })
+    showDeleteModal.value = false
+    await refreshUsers()
+  } catch (error) {
+    alert('Failed to delete user')
+  } finally {
+    deleting.value = false
+  }
 }
 
 async function downloadBackup() {
@@ -214,5 +336,9 @@ async function clearAllUsers() {
 
 function formatDate(dateString: string) {
   return new Date(dateString).toLocaleDateString()
+}
+
+function formatTime(dateString: string) {
+  return new Date(dateString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 }
 </script>

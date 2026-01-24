@@ -11,11 +11,17 @@ const getTokens = async ({ xrplAddress }: { xrplAddress: string }) => {
         account: xrplAddress
     };        
     const accountLinesResponse: AccountLinesResponse = await client.request(accountLinesRequest);
-    const tokens = accountLinesResponse.result.lines.map(line => ({
-        currency: convertPaddedHexToString(line.currency),
-        issuer: line.account,
-        amount: line.balance
-    }));
+    const tokens = accountLinesResponse.result.lines.map(line => {
+        // LP tokens start with "03" in hex format and are 40 chars
+        const isLPToken = line.currency.length === 40 && line.currency.startsWith('03')
+        return {
+            currency: convertPaddedHexToString(line.currency),
+            issuer: line.account,
+            amount: line.balance,
+            limit: line.limit,
+            isLPToken
+        }
+    });
 
     return tokens;
   } catch(e) {

@@ -1,6 +1,6 @@
 <template>
   <USlideover v-model="isOpen" :ui="{ width: 'max-w-md' }">
-    <div class="p-6">
+    <div class="p-6 h-full overflow-y-auto">
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <h2 class="text-xl font-title text-gray-800 dark:text-white">{{ user?.name }}</h2>
@@ -10,9 +10,7 @@
       <!-- Address -->
       <div class="mb-6">
         <div class="text-xs text-gray-500 uppercase mb-1">Address</div>
-        <div class="font-mono text-sm text-gray-700 dark:text-gray-300 break-all">
-          {{ user?.xrplAddress }}
-        </div>
+        <ColoredAddress v-if="user?.xrplAddress" :address="user.xrplAddress" />
       </div>
 
       <!-- Account Info -->
@@ -41,21 +39,24 @@
           <Icon name="heroicons:arrow-path" class="w-6 h-6 animate-spin" />
         </div>
 
-        <div v-else-if="tokens.length === 0" class="text-center py-8 text-gray-500">
+        <div v-else-if="regularTokens.length === 0" class="text-center py-8 text-gray-500">
           No tokens found
         </div>
 
         <div v-else class="space-y-2">
           <div
-            v-for="token in tokens"
+            v-for="token in regularTokens"
             :key="`${token.currency}-${token.issuer}`"
             class="bg-gray-50 dark:bg-gray-800 rounded-lg p-3"
           >
             <div class="flex items-center justify-between">
-              <div class="font-medium text-gray-800 dark:text-white">{{ token.currency }}</div>
+              <span class="font-medium text-gray-800 dark:text-white">{{ token.currency }}</span>
               <div class="text-gray-600 dark:text-gray-400">{{ formatAmount(token.amount) }}</div>
             </div>
-            <div class="text-xs text-gray-500 truncate mt-1 mb-2">{{ token.issuer }}</div>
+            <div class="text-xs text-gray-500 truncate mt-1">{{ token.issuer }}</div>
+            <div class="text-xs text-gray-400 mt-1 mb-2">
+              Limit: {{ formatAmount(token.limit) }}
+            </div>
             <div class="flex gap-2">
               <UButton
                 size="xs"
@@ -70,17 +71,78 @@
                 size="xs"
                 color="primary"
                 variant="soft"
-                icon="i-heroicons-link"
-                @click="setTrustline(token)"
+                icon="i-heroicons-pencil-square"
+                @click="openLimitModal(token)"
                 :loading="trustlineLoading === token.currency"
               >
-                Trustline
+                Edit Limit
               </UButton>
             </div>
           </div>
         </div>
       </div>
+
+      <!-- LP Tokens / Pool Positions -->
+      <div v-if="lpTokens.length > 0" class="mt-6">
+        <div class="text-xs text-gray-500 uppercase mb-3">Pool Positions</div>
+        <div class="space-y-2">
+          <div
+            v-for="token in lpTokens"
+            :key="`${token.currency}-${token.issuer}`"
+            class="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3"
+          >
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="font-medium text-gray-800 dark:text-white">LP Token</span>
+                <span class="px-1.5 py-0.5 text-[10px] font-medium rounded bg-purple-500/20 text-purple-400">
+                  AMM
+                </span>
+              </div>
+              <div class="text-gray-600 dark:text-gray-400">{{ formatAmount(token.amount) }}</div>
+            </div>
+            <div class="text-xs text-gray-500 truncate mt-1">{{ token.issuer }}</div>
+          </div>
+        </div>
+      </div>
     </div>
+
+    <!-- Trustline Limit Modal -->
+    <UModal v-model="showLimitModal">
+      <div class="p-6">
+        <h3 class="text-lg font-title mb-4 text-gray-800 dark:text-white">
+          Set Trustline Limit
+        </h3>
+        <div v-if="editingToken" class="mb-4">
+          <div class="text-sm text-gray-500 mb-1">{{ editingToken.currency }}</div>
+          <div class="mb-2">
+            <ColoredAddress :address="editingToken.issuer" />
+          </div>
+          <div class="text-xs text-gray-400 mb-4">
+            Current limit: {{ formatAmount(editingToken.limit) }}
+          </div>
+          <UFormGroup label="New Limit" :hint="formatLimitHint(newLimit)">
+            <UInput
+              v-model="newLimit"
+              type="text"
+              placeholder="Enter new limit amount"
+              size="lg"
+            />
+          </UFormGroup>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <UButton color="gray" variant="soft" @click="showLimitModal = false">
+            Cancel
+          </UButton>
+          <UButton
+            color="primary"
+            @click="confirmSetTrustline"
+            :loading="trustlineLoading === editingToken?.currency"
+          >
+            Set Limit
+          </UButton>
+        </div>
+      </div>
+    </UModal>
 
     <!-- QR Code Modal for signing -->
     <UModal v-model="showQrModal">
@@ -110,6 +172,8 @@ interface Token {
   currency: string
   issuer: string
   amount: string
+  limit: string
+  isLPToken: boolean
 }
 
 const props = defineProps<{
@@ -132,10 +196,18 @@ const tokens = ref<Token[]>([])
 const accountInfo = ref<any>(null)
 const trustlineLoading = ref<string | null>(null)
 
+const regularTokens = computed(() => tokens.value.filter(t => !t.isLPToken))
+const lpTokens = computed(() => tokens.value.filter(t => t.isLPToken))
+
 // QR Modal state
 const showQrModal = ref(false)
 const qrCodeSrc = ref('')
 const mobileUrl = ref('')
+
+// Trustline edit state
+const showLimitModal = ref(false)
+const editingToken = ref<Token | null>(null)
+const newLimit = ref('')
 
 watch(() => props.user, async (newUser) => {
   if (newUser) {
@@ -175,7 +247,19 @@ async function loadTokens() {
   }
 }
 
-async function setTrustline(token: Token) {
+function openLimitModal(token: Token) {
+  editingToken.value = token
+  newLimit.value = token.limit
+  showLimitModal.value = true
+}
+
+async function confirmSetTrustline() {
+  if (!editingToken.value) return
+  await setTrustline(editingToken.value, newLimit.value)
+  showLimitModal.value = false
+}
+
+async function setTrustline(token: Token, limit?: string) {
   if (!props.user) return
 
   const userToken = localStorage.getItem('user_token')
@@ -191,7 +275,8 @@ async function setTrustline(token: Token) {
       userToken,
       account: props.user.xrplAddress,
       issuer: token.issuer,
-      currency: token.currency
+      currency: token.currency,
+      limit: limit
     })
 
     qrCodeSrc.value = payload.refs.qr_png
@@ -226,5 +311,15 @@ function formatAmount(amount: string): string {
   if (Math.abs(num) >= 1_000_000) return (num / 1_000_000).toFixed(2) + 'M'
   if (Math.abs(num) >= 1_000) return (num / 1_000).toFixed(2) + 'K'
   return num.toLocaleString()
+}
+
+function formatLimitHint(value: string): string {
+  const num = parseFloat(value)
+  if (isNaN(num)) return ''
+  if (Math.abs(num) >= 1_000_000_000_000) return `= ${(num / 1_000_000_000_000).toFixed(2)} Trillion`
+  if (Math.abs(num) >= 1_000_000_000) return `= ${(num / 1_000_000_000).toFixed(2)} Billion`
+  if (Math.abs(num) >= 1_000_000) return `= ${(num / 1_000_000).toFixed(2)} Million`
+  if (Math.abs(num) >= 1_000) return `= ${(num / 1_000).toFixed(2)} Thousand`
+  return `= ${num.toLocaleString()}`
 }
 </script>
