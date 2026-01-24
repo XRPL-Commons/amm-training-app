@@ -1,113 +1,91 @@
 <template>
-  <div class="w-full max-w-4xl mx-auto p-6">
-    <div class="flex items-center justify-center mt-10 mb-8">
-      <img src="/xrpl.png" class="h-8 opacity-80 hidden dark:block" />
-      <img src="/xrplb.png" class="h-8 opacity-80 dark:hidden" />
-      <h1 class="ml-3 text-3xl font-title text-black dark:text-white">Admin Panel</h1>
-    </div>
-
-    <div class="grid gap-6">
-      <!-- Users Overview -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-title mb-4 text-gray-800 dark:text-white">Users Overview</h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4">
-          Currently <span class="font-bold">{{ users.length }}</span> users registered
-        </p>
-        <UButton @click="refreshUsers" color="gray" size="sm">
-          Refresh
-        </UButton>
+  <div class="w-full max-w-4xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="flex items-center justify-between mb-8">
+      <div class="flex items-center gap-3">
+        <img src="/xrpl.png" class="h-8 opacity-80 hidden dark:block" />
+        <img src="/xrplb.png" class="h-8 opacity-80 dark:hidden" />
+        <h1 class="text-2xl font-title text-black dark:text-white">Admin</h1>
       </div>
-
-      <!-- Backup Section -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-title mb-4 text-gray-800 dark:text-white">Backup Users</h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4">
-          Download all user data as a JSON file.
-        </p>
-        <UButton @click="downloadBackup" color="primary" size="md">
-          Download Backup
-        </UButton>
-      </div>
-
-      <!-- Restore Section -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-title mb-4 text-gray-800 dark:text-white">Restore Users</h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4">
-          Upload a backup file to restore users. This will replace all current users.
-        </p>
-        <input
-          type="file"
-          ref="fileInput"
-          accept=".json"
-          @change="handleFileSelect"
-          class="hidden"
-        />
-        <UButton @click="triggerFileInput" color="orange" size="md">
-          Upload Backup
-        </UButton>
-        <span v-if="restoreStatus" class="ml-4 text-green-600 dark:text-green-400">
-          {{ restoreStatus }}
-        </span>
-      </div>
-
-      <!-- Clear Section -->
-      <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-2 border-red-200 dark:border-red-800">
-        <h2 class="text-xl font-title mb-4 text-red-600 dark:text-red-400">Clear All Users</h2>
-        <p class="text-gray-600 dark:text-gray-300 mb-4">
-          Remove all users from memory. This action cannot be undone.
-        </p>
-        <UButton
-          v-if="!confirmClear"
-          @click="confirmClear = true"
-          color="red"
-          variant="outline"
-          size="md"
-        >
-          Clear All Users
-        </UButton>
-        <div v-else class="flex gap-2">
-          <UButton @click="clearAllUsers" color="red" size="md">
-            Confirm Clear
-          </UButton>
-          <UButton @click="confirmClear = false" color="gray" size="md">
-            Cancel
-          </UButton>
-        </div>
-      </div>
-
-      <!-- Users Table -->
-      <div v-if="users.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-        <h2 class="text-xl font-title mb-4 text-gray-800 dark:text-white">Registered Users</h2>
-        <div class="overflow-x-auto">
-          <table class="w-full text-sm text-left text-gray-500 dark:text-gray-400">
-            <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-              <tr>
-                <th class="py-3 px-4">Name</th>
-                <th class="py-3 px-4">XRPL Address</th>
-                <th class="py-3 px-4">Created</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="user in users"
-                :key="user.xrplAddress"
-                class="border-b dark:border-gray-700"
-              >
-                <td class="py-3 px-4">{{ user.name }}</td>
-                <td class="py-3 px-4 font-mono text-xs">{{ user.xrplAddress }}</td>
-                <td class="py-3 px-4">{{ formatDate(user.createdAt) }}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Back link -->
-    <div class="mt-8 text-center">
-      <NuxtLink to="/" class="text-blue-600 dark:text-blue-400 hover:underline">
-        ← Back to Home
+      <NuxtLink to="/" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
+        <Icon name="heroicons:arrow-left" class="w-5 h-5" />
       </NuxtLink>
+    </div>
+
+    <!-- Actions Bar -->
+    <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 mb-6">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-lg font-title text-gray-800 dark:text-white">Users</span>
+          <span class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full text-sm">
+            {{ users.length }}
+          </span>
+        </div>
+        <div class="flex items-center gap-2">
+          <UTooltip text="Refresh">
+            <UButton @click="refreshUsers" color="gray" variant="ghost" size="sm" icon="i-heroicons-arrow-path" />
+          </UTooltip>
+          <UTooltip text="Download backup">
+            <UButton @click="downloadBackup" color="primary" variant="ghost" size="sm" icon="i-heroicons-arrow-down-tray" />
+          </UTooltip>
+          <UTooltip text="Restore from file">
+            <UButton @click="triggerFileInput" color="orange" variant="ghost" size="sm" icon="i-heroicons-arrow-up-tray" />
+          </UTooltip>
+          <UTooltip text="Clear all users">
+            <UButton
+              v-if="!confirmClear"
+              @click="confirmClear = true"
+              color="red"
+              variant="ghost"
+              size="sm"
+              icon="i-heroicons-trash"
+            />
+            <div v-else class="flex items-center gap-1">
+              <UButton @click="clearAllUsers" color="red" size="xs">Confirm</UButton>
+              <UButton @click="confirmClear = false" color="gray" size="xs">Cancel</UButton>
+            </div>
+          </UTooltip>
+        </div>
+      </div>
+      <input
+        type="file"
+        ref="fileInput"
+        accept=".json"
+        @change="handleFileSelect"
+        class="hidden"
+      />
+      <div v-if="restoreStatus" class="mt-2 text-sm text-green-600 dark:text-green-400">
+        {{ restoreStatus }}
+      </div>
+    </div>
+
+    <!-- Users Table -->
+    <div v-if="users.length > 0" class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+      <table class="w-full text-sm text-left">
+        <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+          <tr>
+            <th class="py-3 px-4">Name</th>
+            <th class="py-3 px-4">Address</th>
+            <th class="py-3 px-4 text-right">Joined</th>
+          </tr>
+        </thead>
+        <tbody class="text-gray-700 dark:text-gray-300">
+          <tr
+            v-for="user in users"
+            :key="user.xrplAddress"
+            class="border-t border-gray-100 dark:border-gray-700"
+          >
+            <td class="py-3 px-4 font-medium">{{ user.name }}</td>
+            <td class="py-3 px-4 font-mono text-xs text-gray-500">{{ user.xrplAddress }}</td>
+            <td class="py-3 px-4 text-right text-gray-500">{{ formatDate(user.createdAt) }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Empty State -->
+    <div v-else class="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 text-center text-gray-500">
+      No users registered
     </div>
   </div>
 </template>
@@ -152,7 +130,7 @@ async function downloadBackup() {
     document.body.removeChild(a)
     URL.revokeObjectURL(url)
   } catch (error) {
-    alert('Failed to create backup: ' + error)
+    alert('Failed to create backup')
   }
 }
 
@@ -168,18 +146,13 @@ async function handleFileSelect(event: Event) {
   try {
     const text = await file.text()
     const data = JSON.parse(text)
-
     await API.restoreUsers(data)
     restoreStatus.value = `Restored ${data.users?.length || 0} users`
     await refreshUsers()
-
-    setTimeout(() => {
-      restoreStatus.value = ''
-    }, 3000)
+    setTimeout(() => { restoreStatus.value = '' }, 3000)
   } catch (error) {
-    alert('Failed to restore backup: ' + error)
+    alert('Failed to restore backup')
   }
-
   input.value = ''
 }
 
@@ -189,7 +162,7 @@ async function clearAllUsers() {
     confirmClear.value = false
     await refreshUsers()
   } catch (error) {
-    alert('Failed to clear users: ' + error)
+    alert('Failed to clear users')
   }
 }
 
