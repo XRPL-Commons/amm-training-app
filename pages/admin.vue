@@ -39,11 +39,7 @@
   <div v-else class="w-full max-w-4xl mx-auto px-4 py-8">
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
-      <div class="flex items-center gap-3">
-        <img src="/xrpl.png" class="h-8 opacity-80 hidden dark:block" />
-        <img src="/xrplb.png" class="h-8 opacity-80 dark:hidden" />
-        <h1 class="text-2xl font-title text-black dark:text-white">Admin</h1>
-      </div>
+      <h1 class="text-2xl font-title text-black dark:text-white">Admin</h1>
       <NuxtLink to="/" class="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300">
         <Icon name="heroicons:arrow-left" class="w-5 h-5" />
       </NuxtLink>

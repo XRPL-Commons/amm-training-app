@@ -75,10 +75,13 @@ export function useUserDetails() {
       const lpTokens = tokensResult.filter((t: Token) => t.isLPToken)
       const allTokens = [...tokensWithAmmCheck, ...lpTokens]
 
+      // Preserve existing lpTokensWithPool during refresh to avoid UI shift
+      const existingLpTokens = cache[xrplAddress]?.lpTokensWithPool || []
+
       // Update cache reactively - this will trigger UI updates
       cache[xrplAddress] = {
         tokens: allTokens,
-        lpTokensWithPool: [],
+        lpTokensWithPool: existingLpTokens,
         accountInfo: accountResult,
         initialized: true
       }
@@ -94,6 +97,11 @@ export function useUserDetails() {
         // Update cache with LP pool info - reactive update
         if (cache[xrplAddress]) {
           cache[xrplAddress].lpTokensWithPool = lpResults
+        }
+      } else {
+        // No LP tokens, clear the list
+        if (cache[xrplAddress]) {
+          cache[xrplAddress].lpTokensWithPool = []
         }
       }
 
