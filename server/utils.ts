@@ -23,7 +23,7 @@ export async function getExplorerClient() {
 export function convertPaddedHexToString(hex: string): string {
     // Strip trailing zeros that were added as padding
     hex = hex.replace(/0+$/, '');
-  
+
     // Convert each pair of hexadecimal digits to a character
     let str = '';
     for (let i = 0; i < hex.length; i += 2) {
@@ -33,7 +33,7 @@ export function convertPaddedHexToString(hex: string): string {
         str += String.fromCharCode(code);
       }
     }
-  
+
     return str;
   }
 
@@ -41,11 +41,11 @@ export function convertPaddedHexToString(hex: string): string {
     // Convert string to hexadecimal
     let hex: string = '';
     for (let i = 0; i < str.length; i++) {
-    const hexChar: string = str.charCodeAt(i).toString(16);
-    hex += hexChar;
+      const hexChar: string = str.charCodeAt(i).toString(16).padStart(2, '0');
+      hex += hexChar;
     }
 
     // Pad with zeros to ensure it's 40 characters long
     const paddedHex: string = hex.padEnd(40, '0');
-    return paddedHex.toUpperCase(); // Typically, hex is handled in uppercase
+    return paddedHex.toUpperCase();
 }

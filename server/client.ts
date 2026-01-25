@@ -53,6 +53,21 @@ const actions = [
     method: 'POST'
   },
   {
+    name: 'depositAmm',
+    path: '/api/blockchain/amm/deposit',
+    method: 'POST'
+  },
+  {
+    name: 'withdrawAmm',
+    path: '/api/blockchain/amm/withdraw',
+    method: 'POST'
+  },
+  {
+    name: 'voteAmmFee',
+    path: '/api/blockchain/amm/vote',
+    method: 'POST'
+  },
+  {
     name: 'XamanSignIn',
     path: '/api/xaman/sign-in',
     method: 'POST',

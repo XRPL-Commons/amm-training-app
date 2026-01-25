@@ -15,6 +15,14 @@ const createTrustline = async ({ userToken, account, currency, issuer, limit }:
 
     await xumm?.ping()
 
+    // If currency is already in raw format (3-char or 40-char hex), use it directly
+    // Otherwise convert to hex
+    const currencyForTx = (currency.length === 3 || currency.length === 40)
+      ? currency
+      : convertStringToHexPadded(currency);
+
+    console.log('[Trustline Debug]', { currency, currencyForTx, issuer, account, limit })
+
     const payload = await xumm.payload?.create({
       user_token: userToken,
       txjson: {
@@ -22,13 +30,14 @@ const createTrustline = async ({ userToken, account, currency, issuer, limit }:
         Account: account,
         LimitAmount: {
             issuer: issuer,
-            currency: convertStringToHexPadded(currency),
+            currency: currencyForTx,
             value: limit || "1000000000000000",
         },
       }
     } as any, true);
     return payload;
   } catch (error: any) {
+    console.error('[Trustline Error]', error)
     throw createError({
       status: 500,
       statusMessage: 'Failed to create trustline payload'

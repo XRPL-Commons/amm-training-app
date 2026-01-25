@@ -4,10 +4,16 @@ import { convertPaddedHexToString, convertStringToHexPadded, getExplorerClient }
 const getAmm = async ({ issuer, currency }: { issuer: string, currency: string }) => {
   const client = await getExplorerClient();
   try {
+    // If currency is already in raw format (3-char standard or 40-char hex), use it directly
+    // Otherwise convert to hex (for backwards compatibility)
+    const currencyForRequest = (currency.length === 3 || currency.length === 40)
+      ? currency
+      : convertStringToHexPadded(currency);
+
     const ammRequest: AMMInfoRequest = {
         command: 'amm_info',
         asset: {
-            currency: convertStringToHexPadded(currency),
+            currency: currencyForRequest,
             issuer: issuer
         },
         asset2: {
@@ -32,13 +38,14 @@ const getAmm = async ({ issuer, currency }: { issuer: string, currency: string }
             issuer: ammResponse.result.amm.lp_token.issuer,
             amount: ammResponse.result.amm.lp_token.value,
             currency: convertPaddedHexToString(ammResponse.result.amm.lp_token.currency),
+            currencyRaw: ammResponse.result.amm.lp_token.currency, // Keep raw hex for LP tokens (starts with 03)
             holders: obResponse.result.lines
               .filter(line => line.currency === ammResponse.result.amm.lp_token.currency)
               .map(holder => ({
                 account: holder.account,
                 amount: Math.abs(parseInt(holder.balance)),
                 share: totalLpToken > 0 ? ((Math.abs(parseInt(holder.balance)) / totalLpToken) * 100).toFixed(2) + '%' : '0%'
-              })),         
+              })),
         },
         id: ammResponse.result.amm.account
     };    
@@ -67,15 +74,17 @@ export default defineEventHandler(async (event) => {
 })
 
 function normalizeAmount(amount: any) {
-    if (typeof amount === 'string') {        
+    if (typeof amount === 'string') {
         return {
             currency: 'XRP',
+            currencyRaw: 'XRP', // XRP is always just 'XRP'
             amount: (parseInt(amount) / 1000000).toString(),
             issuer: 'XRP',
         };
     } else if (typeof amount === 'object' && amount !== null) {
         return {
             currency: convertPaddedHexToString(amount.currency),
+            currencyRaw: amount.currency, // Preserve original format for transactions
             amount: amount.value,
             issuer: amount.issuer
         };

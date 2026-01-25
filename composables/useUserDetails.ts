@@ -2,10 +2,12 @@ import API from '~/server/client'
 
 interface Token {
   currency: string
+  currencyRaw?: string // Original format from ledger (3-char or 40-char hex)
   issuer: string
   amount: string
   limit: string
   isLPToken: boolean
+  isHexEncoded?: boolean
   hasAmm?: boolean
 }
 

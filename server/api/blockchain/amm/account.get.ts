@@ -34,11 +34,13 @@ function normalizeAmount(amount: any) {
   if (typeof amount === 'string') {
     return {
       currency: 'XRP',
+      currencyRaw: 'XRP',
       amount: (parseInt(amount) / 1000000).toString(),
     };
   } else if (typeof amount === 'object' && amount !== null) {
     return {
       currency: convertPaddedHexToString(amount.currency),
+      currencyRaw: amount.currency, // Preserve original format
       amount: amount.value,
       issuer: amount.issuer,
     };

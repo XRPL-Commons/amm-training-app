@@ -1,8 +1,24 @@
 import API from '~/server/client'
 
+interface WalletToken {
+  currency: string
+  currencyRaw?: string
+  issuer: string
+  amount: string
+  limit: string
+  isLPToken: boolean
+  isHexEncoded?: boolean
+}
+
 const userToken = ref('')
 const xrplAddress = ref('')
 const currentUser = ref<{ name: string; xrplAddress: string } | null>(null)
+
+// Connected user's token/trustline data
+const walletTokens = ref<WalletToken[]>([])
+const walletXrpBalance = ref('0')
+const walletDataLoading = ref(false)
+const walletDataInitialized = ref(false)
 
 export function useWallet() {
   const modal = useModal()
@@ -13,7 +29,45 @@ export function useWallet() {
     if (typeof window !== 'undefined') {
       userToken.value = localStorage.getItem('user_token') || ''
       xrplAddress.value = localStorage.getItem('xrpl_address') || ''
+      // Load wallet data if connected
+      if (xrplAddress.value) {
+        await refreshWalletData()
+      }
     }
+  }
+
+  // Load/refresh the connected user's token data
+  async function refreshWalletData() {
+    if (!xrplAddress.value) return
+
+    walletDataLoading.value = true
+    try {
+      const [tokens, accountInfo] = await Promise.all([
+        API.getTokens({ xrplAddress: xrplAddress.value }),
+        API.getAccountInfo({ xrplAddress: xrplAddress.value })
+      ])
+
+      walletTokens.value = tokens
+      const drops = accountInfo?.result?.account_data?.Balance || '0'
+      walletXrpBalance.value = (parseInt(drops) / 1_000_000).toString()
+      walletDataInitialized.value = true
+    } catch (error) {
+      console.error('Failed to load wallet data:', error)
+    } finally {
+      walletDataLoading.value = false
+    }
+  }
+
+  // Get the connected user's trustline for a specific token
+  function getTrustlineFor(currency: string, issuer: string): WalletToken | undefined {
+    return walletTokens.value.find(t =>
+      t.currency === currency && t.issuer === issuer && !t.isLPToken
+    )
+  }
+
+  // Get XRP balance
+  function getXrpBalance(): string {
+    return walletXrpBalance.value
   }
 
   async function connectWallet(QRCodeModal?: any) {
@@ -57,6 +111,8 @@ export function useWallet() {
             localStorage.setItem('user_token', userToken.value)
             modal.close()
             ws.close()
+            // Load wallet data after connection
+            await refreshWalletData()
             resolve(xrplAddress.value)
           }
         }
@@ -71,6 +127,9 @@ export function useWallet() {
     userToken.value = ''
     xrplAddress.value = ''
     currentUser.value = null
+    walletTokens.value = []
+    walletXrpBalance.value = '0'
+    walletDataInitialized.value = false
     localStorage.removeItem('user_token')
     localStorage.removeItem('xrpl_address')
   }
@@ -84,9 +143,18 @@ export function useWallet() {
     xrplAddress,
     currentUser,
     isConnected,
+    // Wallet token data
+    walletTokens: readonly(walletTokens),
+    walletXrpBalance: readonly(walletXrpBalance),
+    walletDataLoading: readonly(walletDataLoading),
+    walletDataInitialized: readonly(walletDataInitialized),
+    // Functions
     loadFromStorage,
     connectWallet,
     disconnectWallet,
-    setCurrentUser
+    setCurrentUser,
+    refreshWalletData,
+    getTrustlineFor,
+    getXrpBalance
   }
 }

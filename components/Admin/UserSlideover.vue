@@ -55,24 +55,25 @@
                 <div class="text-gray-600 dark:text-gray-400">{{ formatAmount(token.amount) }}</div>
               </div>
               <ColoredAddress :address="token.issuer" variant="boxes" />
-              <div class="text-xs text-gray-400 mt-2">
-                Trustline: {{ formatAmount(token.limit) }}
-              </div>
             </div>
-            <!-- Token Footer -->
-            <div class="flex gap-2 px-3 py-2 bg-gray-100 dark:bg-gray-700/50 border-t border-gray-200 dark:border-gray-700">
+            <!-- Connected User's Trustline -->
+            <div class="mx-3 pt-2 pb-3 border-t border-blue-500/30 flex items-center justify-between">
+              <span class="text-xs text-gray-500">
+                Your trustline limit: {{ getMyTrustlineLimit(token) }}
+              </span>
               <UButton
                 size="xs"
                 color="primary"
                 variant="ghost"
-                :icon="parseFloat(token.limit) === 0 ? 'i-heroicons-plus' : 'i-heroicons-pencil-square'"
-                @click="openLimitModal(token)"
-                :loading="trustlineLoading === token.currency"
+                :icon="getMyTrustline(token) ? 'i-heroicons-pencil-square' : 'i-heroicons-plus'"
+                @click="openTrustlineModal(token)"
               >
-                Trustline
+                {{ getMyTrustline(token) ? 'Edit' : 'Add' }}
               </UButton>
+            </div>
+            <!-- Token Footer with AMM button -->
+            <div v-if="token.hasAmm" class="flex gap-2 px-3 py-2 bg-primary-500/10 border-t border-primary-500/20">
               <UButton
-                v-if="token.hasAmm"
                 size="xs"
                 color="primary"
                 variant="soft"
@@ -143,13 +144,13 @@
     </div>
 
     <!-- Trustline Limit Modal -->
-    <UModal v-model="showLimitModal">
+    <UModal v-model="showTrustlineModal">
       <div class="p-6">
         <div class="flex items-center justify-between mb-4">
           <h3 class="text-lg font-title text-gray-800 dark:text-white">
             Set Trustline Limit
           </h3>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showLimitModal = false" />
+          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showTrustlineModal = false" />
         </div>
         <div v-if="editingToken" class="mb-4">
           <div class="text-sm text-gray-500 mb-1">{{ editingToken.currency }}</div>
@@ -157,11 +158,11 @@
             <ColoredAddress :address="editingToken.issuer" />
           </div>
           <div class="text-xs text-gray-400 mb-4">
-            Current limit: {{ formatAmount(editingToken.limit) }}
+            Current limit: {{ getMyTrustlineLimit(editingToken) }}
           </div>
-          <UFormGroup label="New Limit" :hint="formatLimitHint(newLimit)">
+          <UFormGroup label="New Limit" :hint="formatLimitHint(newTrustlineLimit)">
             <UInput
-              v-model="newLimit"
+              v-model="newTrustlineLimit"
               type="text"
               placeholder="Enter new limit amount"
               size="lg"
@@ -169,13 +170,13 @@
           </UFormGroup>
         </div>
         <div class="flex justify-end gap-2 mt-4">
-          <UButton color="primary" variant="ghost" @click="showLimitModal = false">
+          <UButton color="gray" variant="ghost" @click="showTrustlineModal = false">
             Cancel
           </UButton>
           <UButton
             color="primary"
             @click="confirmSetTrustline"
-            :loading="trustlineLoading === editingToken?.currency"
+            :loading="trustlineLoading"
           >
             Set Limit
           </UButton>
@@ -185,18 +186,13 @@
 
     <!-- QR Code Modal for signing -->
     <UModal v-model="showQrModal">
-      <div class="p-6">
-        <div class="flex items-center justify-between mb-4">
-          <h3 class="text-lg font-title text-gray-800 dark:text-white">Sign with Xaman</h3>
-          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showQrModal = false" />
-        </div>
-        <div class="text-center">
+      <div class="p-6 text-center">
+        <h3 class="text-lg font-title mb-4 text-gray-800 dark:text-white">Sign with Xaman</h3>
         <img v-if="qrCodeSrc" :src="qrCodeSrc" class="mx-auto mb-4 rounded-lg" />
         <p class="text-sm text-gray-500 mb-4">Scan with Xaman or click below on mobile</p>
         <UButton v-if="mobileUrl" :to="mobileUrl" external color="primary" block>
           Open Xaman
         </UButton>
-        </div>
       </div>
     </UModal>
   </USlideover>
@@ -207,7 +203,19 @@ import { ref, watch } from 'vue'
 import API from '~/server/client'
 
 const toast = useToast()
-const { cache: detailsCache, loadingAddresses, loadDetails, refreshTokens } = useUserDetails()
+const { cache: detailsCache, loadingAddresses, loadDetails } = useUserDetails()
+const { getTrustlineFor, walletDataInitialized, refreshWalletData, xrplAddress: connectedAddress, userToken: connectedUserToken } = useWallet()
+
+// Trustline modal state
+const showTrustlineModal = ref(false)
+const editingToken = ref<Token | null>(null)
+const newTrustlineLimit = ref('')
+const trustlineLoading = ref(false)
+
+// QR Modal state
+const showQrModal = ref(false)
+const qrCodeSrc = ref('')
+const mobileUrl = ref('')
 
 interface User {
   xrplAddress: string
@@ -217,11 +225,19 @@ interface User {
 
 interface Token {
   currency: string
+  currencyRaw?: string // Original format from ledger (3-char or 40-char hex)
   issuer: string
   amount: string
   limit: string
   isLPToken: boolean
   hasAmm?: boolean
+}
+
+interface PoolInfo {
+  asset1: { currency: string; currencyRaw?: string; amount: string; issuer?: string }
+  asset2: { currency: string; currencyRaw?: string; amount: string; issuer?: string }
+  tradingFee: string
+  account: string
 }
 
 const props = defineProps<{
@@ -239,8 +255,6 @@ const isOpen = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
-const trustlineLoading = ref<string | null>(null)
-
 // Get cached details from composable (direct cache access for reactivity)
 const details = computed(() => props.user ? detailsCache[props.user.xrplAddress] : null)
 const loading = computed(() => props.user ? loadingAddresses.has(props.user.xrplAddress) : false)
@@ -255,16 +269,6 @@ const regularTokens = computed(() => tokens.value.filter(t => !t.isLPToken))
 // Data is always for current user since it comes from cache keyed by address
 const isDataForCurrentUser = computed(() => !!details.value)
 
-// QR Modal state
-const showQrModal = ref(false)
-const qrCodeSrc = ref('')
-const mobileUrl = ref('')
-
-// Trustline edit state
-const showLimitModal = ref(false)
-const editingToken = ref<Token | null>(null)
-const newLimit = ref('')
-
 watch(() => props.user, async (newUser) => {
   if (newUser) {
     await loadDetails(newUser.xrplAddress)
@@ -274,62 +278,6 @@ watch(() => props.user, async (newUser) => {
 async function loadData() {
   if (!props.user) return
   await loadDetails(props.user.xrplAddress, true)
-}
-
-function openLimitModal(token: Token) {
-  editingToken.value = token
-  newLimit.value = token.limit
-  showLimitModal.value = true
-}
-
-async function confirmSetTrustline() {
-  if (!editingToken.value) return
-  await setTrustline(editingToken.value, newLimit.value)
-  showLimitModal.value = false
-}
-
-async function setTrustline(token: Token, limit?: string) {
-  if (!props.user) return
-
-  const userToken = localStorage.getItem('user_token')
-  if (!userToken) {
-    alert('Please sign in with Xaman first')
-    return
-  }
-
-  trustlineLoading.value = token.currency
-
-  try {
-    const payload = await API.createTrustline({
-      userToken,
-      account: props.user.xrplAddress,
-      issuer: token.issuer,
-      currency: token.currency,
-      limit: limit
-    })
-
-    qrCodeSrc.value = payload.refs.qr_png
-    mobileUrl.value = payload.next.always
-    showQrModal.value = true
-
-    // Listen for signing
-    const ws = new WebSocket(payload.refs.websocket_status)
-    ws.onmessage = async (message) => {
-      const data = JSON.parse(message.data)
-      if (data.signed === true) {
-        showQrModal.value = false
-        ws.close()
-        if (props.user) {
-          await refreshTokens(props.user.xrplAddress)
-        }
-      }
-    }
-  } catch (error) {
-    console.error('Failed to create trustline:', error)
-    alert('Failed to create trustline')
-  } finally {
-    trustlineLoading.value = null
-  }
 }
 
 function copyAddress() {
@@ -351,6 +299,82 @@ function formatAmount(amount: string): string {
   return num.toLocaleString()
 }
 
+function getNonXrpAsset(poolInfo: PoolInfo) {
+  // Find the non-XRP asset to use for viewing the AMM
+  if (poolInfo.asset1.currency !== 'XRP') {
+    return {
+      currency: poolInfo.asset1.currency,
+      currencyRaw: poolInfo.asset1.currencyRaw,
+      issuer: poolInfo.asset1.issuer || '',
+      amount: poolInfo.asset1.amount
+    }
+  }
+  return {
+    currency: poolInfo.asset2.currency,
+    currencyRaw: poolInfo.asset2.currencyRaw,
+    issuer: poolInfo.asset2.issuer || '',
+    amount: poolInfo.asset2.amount
+  }
+}
+
+// Connected user's trustline helpers
+function getMyTrustline(token: Token) {
+  return getTrustlineFor(token.currency, token.issuer)
+}
+
+function getMyTrustlineLimit(token: Token): string {
+  const trustline = getMyTrustline(token)
+  return trustline ? formatAmount(trustline.limit) : 'None'
+}
+
+function openTrustlineModal(token: Token) {
+  editingToken.value = token
+  const existing = getMyTrustline(token)
+  newTrustlineLimit.value = existing?.limit || '1000000000'
+  showTrustlineModal.value = true
+}
+
+async function confirmSetTrustline() {
+  if (!editingToken.value || !connectedAddress.value || !connectedUserToken.value) {
+    toast.add({ title: 'Please sign in first', color: 'red' })
+    return
+  }
+
+  trustlineLoading.value = true
+
+  try {
+    const payload = await API.createTrustline({
+      userToken: connectedUserToken.value,
+      account: connectedAddress.value,
+      issuer: editingToken.value.issuer,
+      currency: editingToken.value.currencyRaw || editingToken.value.currency,
+      limit: newTrustlineLimit.value
+    })
+
+    showTrustlineModal.value = false
+    qrCodeSrc.value = payload.refs.qr_png
+    mobileUrl.value = payload.next.always
+    showQrModal.value = true
+
+    const ws = new WebSocket(payload.refs.websocket_status)
+    ws.onmessage = async (message) => {
+      const data = JSON.parse(message.data)
+      if (data.signed === true) {
+        showQrModal.value = false
+        ws.close()
+        // Refresh wallet data after trustline change
+        await refreshWalletData()
+        toast.add({ title: 'Trustline updated', icon: 'i-heroicons-check-circle' })
+      }
+    }
+  } catch (error) {
+    console.error('Failed to create trustline:', error)
+    toast.add({ title: 'Failed to create trustline', color: 'red' })
+  } finally {
+    trustlineLoading.value = false
+  }
+}
+
 function formatLimitHint(value: string): string {
   const num = parseFloat(value)
   if (isNaN(num)) return ''
@@ -359,21 +383,5 @@ function formatLimitHint(value: string): string {
   if (Math.abs(num) >= 1_000_000) return `= ${(num / 1_000_000).toFixed(2)} Million`
   if (Math.abs(num) >= 1_000) return `= ${(num / 1_000).toFixed(2)} Thousand`
   return `= ${num.toLocaleString()}`
-}
-
-function getNonXrpAsset(poolInfo: PoolInfo) {
-  // Find the non-XRP asset to use for viewing the AMM
-  if (poolInfo.asset1.currency !== 'XRP') {
-    return {
-      currency: poolInfo.asset1.currency,
-      issuer: poolInfo.asset1.issuer || '',
-      amount: poolInfo.asset1.amount
-    }
-  }
-  return {
-    currency: poolInfo.asset2.currency,
-    issuer: poolInfo.asset2.issuer || '',
-    amount: poolInfo.asset2.amount
-  }
 }
 </script>
