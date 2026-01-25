@@ -5,6 +5,7 @@
     "node": "24.x"
   },
   "scripts": {
+    "build": "nuxt build",
     "dev": "nuxt dev",
     "start": "node .output/server/index.mjs"
   },
