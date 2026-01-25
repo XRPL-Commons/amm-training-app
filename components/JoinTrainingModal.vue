@@ -1,5 +1,5 @@
 <template>
-  <UModal v-model="isOpen">
+  <UModal :model-value="true">
     <div class="p-6">
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
@@ -14,54 +14,63 @@
         </UFormGroup>
 
         <UFormGroup label="Name">
-          <UInput v-model="name" placeholder="Enter your name" />
+          <UInput v-model="name" placeholder="Enter your name" autofocus />
         </UFormGroup>
       </div>
 
       <!-- Footer -->
       <div class="flex justify-end gap-2 mt-6">
-        <UButton color="gray" variant="soft" @click="closeModal">Cancel</UButton>
-        <UButton color="primary" @click="joinTraining">Join</UButton>
+        <UButton color="primary" variant="ghost" @click="closeModal" :disabled="joining">Cancel</UButton>
+        <UButton color="primary" @click="joinTraining" :loading="joining">Join</UButton>
       </div>
     </div>
   </UModal>
 </template>
 
 <script lang="ts" setup>
-/* @ts-ignore */
 import API from '~/server/client'
 
-const props = defineProps(['xrplAddress', 'isOpen'])
-const {
-  xrplAddress,
-  isOpen,
-} = toRefs(props);
+const props = defineProps(['xrplAddress'])
+const { xrplAddress } = toRefs(props)
 
-const name = ref('');
+const modal = useModal()
+const { addUserOptimistic, fetchUsers } = useUsers()
 
-const emit = defineEmits(['close']);
+const name = ref('')
+const joining = ref(false)
 
 const closeModal = () => {
-  emit('close');
+  modal.close()
 }
 
 const joinTraining = async () => {
+  if (!isNameValid()) {
+    alert("Name cannot be empty")
+    return
+  }
+
+  joining.value = true
+  const trimmedName = name.value.trim()
+  const address = xrplAddress?.value
+
+  // Optimistic update
+  addUserOptimistic({ xrplAddress: address, name: trimmedName })
+  modal.close()
+
   try {
-      if (!isNameValid()) {
-        alert("Name cannot be empty")
-        return
-      }
-      await API.createUser({ 
-        xrplAddress: xrplAddress?.value, 
-        name: name.value.trim()
-      })
-      emit('close');   
+    await API.createUser({ xrplAddress: address, name: trimmedName })
+    // Refresh to get server state
+    await fetchUsers()
   } catch (error) {
-      alert("Error creating user: " + error);
-  }      
+    // Refresh to revert optimistic update
+    await fetchUsers()
+    alert("Error creating user: " + error)
+  } finally {
+    joining.value = false
+  }
 }
 
 function isNameValid() {
-  return name.value !== null && name.value.trim() !== '';
+  return name.value !== null && name.value.trim() !== ''
 }
 </script>

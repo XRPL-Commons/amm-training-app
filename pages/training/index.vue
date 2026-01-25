@@ -3,9 +3,28 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-2xl font-title text-black dark:text-white">Training Session</h1>
-      <UButton color="blue" @click="joinTraining" icon="i-heroicons-user-plus">
-        Join
-      </UButton>
+      <div class="flex items-center gap-2">
+        <!-- Connect button when not connected -->
+        <UButton v-if="!isConnected" color="primary" @click="connectWallet" icon="i-heroicons-wallet">
+          Connect
+        </UButton>
+        <!-- Show address + Join button if connected but not registered -->
+        <template v-else-if="!currentUser">
+          <ColoredAddress :address="xrplAddress" variant="boxes" />
+          <UButton color="primary" @click="joinTraining" icon="i-heroicons-user-plus">
+            Join
+          </UButton>
+        </template>
+        <!-- Show current user info if registered -->
+        <div v-else class="flex items-center gap-2">
+          <span class="text-sm text-gray-600 dark:text-gray-400">{{ currentUser.name }}</span>
+          <ColoredAddress :address="xrplAddress" variant="boxes" />
+        </div>
+        <!-- Disconnect button -->
+        <UTooltip v-if="isConnected" text="Disconnect wallet">
+          <UButton color="gray" variant="ghost" icon="i-heroicons-arrow-right-on-rectangle" @click="disconnectWallet" />
+        </UTooltip>
+      </div>
     </div>
 
     <!-- Participants -->
@@ -74,8 +93,17 @@ const modal = useModal()
 const userToken = ref('')
 const xrplAddress = ref('')
 
-// users
-const users = ref<UserObject[]>([])
+// users (from composable)
+const { users, fetchUsers, findUser } = useUsers()
+
+// Computed: connection status
+const isConnected = computed(() => !!xrplAddress.value)
+
+// Computed: current user (if registered)
+const currentUser = computed(() => {
+  if (!xrplAddress.value) return null
+  return findUser(xrplAddress.value)
+})
 
 // Slideover state
 const showUserSlideover = ref(false)
@@ -131,14 +159,28 @@ watch(showAmmSlideover, (open) => {
   }
 })
 
+// Track if users have been loaded
+const usersLoaded = ref(false)
+
+// Auto-open join modal when connected but not registered (after users loaded)
+watch([isConnected, currentUser, usersLoaded], ([connected, user, loaded]) => {
+  if (connected && !user && loaded) {
+    nextTick(() => joinTraining())
+  }
+})
+
 onMounted(async () => {
   userToken.value = localStorage.getItem('user_token') || ''
   xrplAddress.value = localStorage.getItem('xrpl_address') || ''
 
+  // Fetch users first
+  await fetchUsers()
+  usersLoaded.value = true
+
+  // Connect wallet if not connected
   if (!userToken.value || !xrplAddress.value) {
     await connectWallet()
   }
-  await displayUsers()
 })
 
 function openUserDetails(user: UserObject) {
@@ -196,6 +238,13 @@ function connectWallet() {
             localStorage.setItem('user_token', userToken.value)
             modal.close()
             wsClose()
+
+            // Check if user is registered, if not prompt to join
+            if (!findUser(xrplAddress.value)) {
+              await nextTick()
+              joinTraining()
+            }
+
             resolve(xrplAddress.value)
           }
         }
@@ -205,6 +254,13 @@ function connectWallet() {
       reject(error)
     }
   })
+}
+
+function disconnectWallet() {
+  localStorage.removeItem('xrpl_address')
+  localStorage.removeItem('user_token')
+  xrplAddress.value = ''
+  userToken.value = ''
 }
 
 async function initializeWebSocket({ url, onMessage }: { url: string; onMessage?: any }) {
@@ -235,21 +291,9 @@ async function initializeWebSocket({ url, onMessage }: { url: string; onMessage?
   return ws
 }
 
-async function displayUsers() {
-  try {
-    users.value = await API.getUsers({})
-  } catch (error) {
-    console.error('Error fetching users:', error)
-  }
-}
-
 function joinTraining() {
   modal.open(JoinTrainingModal, {
-    xrplAddress,
-    onClose: async () => {
-      modal.close()
-      await displayUsers()
-    }
+    xrplAddress: xrplAddress.value
   })
 }
 </script>

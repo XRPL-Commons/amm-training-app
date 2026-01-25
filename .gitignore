@@ -8,6 +8,9 @@
 dist
 db
 logs
+Build
+Caching
+Pruning
 
 # Node dependencies
 node_modules

@@ -1,19 +1,9 @@
-import { AddUser, GetUsers } from '~/server/connectors/memory'
+import { AddUser } from '~/server/connectors/memory'
 import type { User } from '~/server/connectors/memory'
 
 export const createUser = async ({ xrplAddress, name }: { xrplAddress: string, name: string }) => {
     try {
-        // Get User object if exists
-        const users = await GetUsers(xrplAddress, name);
-        if (users && users.length > 0) {
-            throw createError({
-                statusCode: 400,
-                statusMessage: 'This address or name already exists',
-            })
-        }
-
-        // Add new user in DB
-        let userObject: User = {
+        const userObject: User = {
             xrplAddress: xrplAddress,
             name: name,
             createdAt: new Date().toISOString()
@@ -21,10 +11,13 @@ export const createUser = async ({ xrplAddress, name }: { xrplAddress: string, n
         await AddUser(userObject);
         return {};
     } catch (error: any) {
-        throw createError({
-            status: 500,
-            statusMessage: 'Failed to create user'
-        })
+        if (error.message === 'User already exists') {
+            throw createError({
+                statusCode: 400,
+                statusMessage: 'This address or name already exists',
+            })
+        }
+        throw error;
     }
 }
 

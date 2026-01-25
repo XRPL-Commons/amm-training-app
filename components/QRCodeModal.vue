@@ -1,25 +1,27 @@
 <template>
-  <UModal v-model="isOpen" class="">
-    <UCard :ui="{ ring: '', divide: 'divide-y divide-gray-100 dark:divide-gray-800' }" class="text-center">
-      <div class="font-title mb-4">Connect to your wallet</div>
+  <UModal :model-value="true">
+    <div class="p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg font-title text-gray-800 dark:text-white">Connect to your wallet</h3>
+        <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="closeModal" />
+      </div>
       <div class="flex justify-center">
-        <img :src="qrCodeSrc" alt="QR Code (click to copy)" class="rounded-md" @click="onImageClick()">
+        <img :src="qrCodeSrc" alt="QR Code (click to copy)" class="rounded-md cursor-pointer" @click="onImageClick()">
       </div>
-      <div class="font-title mt-4">
-        <p>Scan with Xaman or click the image to copy code manually.</p>
-      </div>
-    </UCard>
+      <p class="text-sm text-gray-500 text-center mt-4">Scan with Xaman or click the image to copy code manually.</p>
+    </div>
   </UModal>
 </template>
 
 <script lang="ts" setup>
-const props = defineProps(['isOpen', 'qrCodeSrc', 'isConnection', 'mobileUrl', 'uuid'])
-const {
-  isOpen,
-  qrCodeSrc,
-  mobileUrl,
-  uuid
-} = toRefs(props)
+const props = defineProps(['qrCodeSrc', 'mobileUrl', 'uuid'])
+const { qrCodeSrc, mobileUrl, uuid } = toRefs(props)
+
+const modal = useModal()
+
+const closeModal = () => {
+  modal.close()
+}
 
 const onImageClick = async () => {
   if (mobileUrl && mobileUrl.value) {

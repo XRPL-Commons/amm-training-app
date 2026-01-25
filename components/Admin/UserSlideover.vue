@@ -135,9 +135,12 @@
     <!-- Trustline Limit Modal -->
     <UModal v-model="showLimitModal">
       <div class="p-6">
-        <h3 class="text-lg font-title mb-4 text-gray-800 dark:text-white">
-          Set Trustline Limit
-        </h3>
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-title text-gray-800 dark:text-white">
+            Set Trustline Limit
+          </h3>
+          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showLimitModal = false" />
+        </div>
         <div v-if="editingToken" class="mb-4">
           <div class="text-sm text-gray-500 mb-1">{{ editingToken.currency }}</div>
           <div class="mb-2">
@@ -156,7 +159,7 @@
           </UFormGroup>
         </div>
         <div class="flex justify-end gap-2 mt-4">
-          <UButton color="gray" variant="soft" @click="showLimitModal = false">
+          <UButton color="primary" variant="ghost" @click="showLimitModal = false">
             Cancel
           </UButton>
           <UButton
@@ -172,13 +175,18 @@
 
     <!-- QR Code Modal for signing -->
     <UModal v-model="showQrModal">
-      <div class="p-6 text-center">
-        <h3 class="text-lg font-title mb-4 text-gray-800 dark:text-white">Sign with Xaman</h3>
+      <div class="p-6">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-lg font-title text-gray-800 dark:text-white">Sign with Xaman</h3>
+          <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="showQrModal = false" />
+        </div>
+        <div class="text-center">
         <img v-if="qrCodeSrc" :src="qrCodeSrc" class="mx-auto mb-4 rounded-lg" />
         <p class="text-sm text-gray-500 mb-4">Scan with Xaman or click below on mobile</p>
         <UButton v-if="mobileUrl" :to="mobileUrl" external color="primary" block>
           Open Xaman
         </UButton>
+        </div>
       </div>
     </UModal>
   </USlideover>
