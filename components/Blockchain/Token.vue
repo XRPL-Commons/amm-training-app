@@ -105,14 +105,10 @@ async function setTrustline(token: TokenObject) {
         currency: token.currency 
       })
 
-      // from payload
-      console.log(payload)
       const qrCodeSrc = payload.refs.qr_png
       const mobileUrl = payload.next.always
       const websocket_status = payload.refs.websocket_status
 
-      // Launch modal
-      console.log({ qrCodeSrc, mobileUrl })
       modal.open(QRCodeModal, {
         qrCodeSrc,
         mobileUrl
@@ -121,13 +117,10 @@ async function setTrustline(token: TokenObject) {
       const ws = await initializeWebsocket({
         url: websocket_status,
         onMessage: async ({ data, wsClose }: { data: any, wsClose: any }) => {
-          console.log(data.payload)
-          if (data.payload.tx_type == 'TrustSet') {            
+          if (data.payload.tx_type == 'TrustSet') {
             modal.close()
             resolve('something')
             wsClose()
-          } else {
-            console.log('ignored message', data)
           }
         }
       })

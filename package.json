@@ -2,10 +2,11 @@
   "name": "nuxt-app",
   "private": true,
   "engines": {
-    "node": "20.x"
+    "node": "24.x"
   },
   "scripts": {
-    "dev": "nuxt dev"
+    "dev": "nuxt dev",
+    "start": "node .output/server/index.mjs"
   },
   "devDependencies": {
     "@nuxt/devtools": "latest",

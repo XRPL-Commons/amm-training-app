@@ -213,8 +213,6 @@ async function tradeAmm() {
         issuer: issuer.value,
       })
 
-      // from payload
-      console.log(payload)
       const qrCodeSrc = payload.refs.qr_png
       const mobileUrl = payload.next.always
       const websocket_status = payload.refs.websocket_status
@@ -229,14 +227,12 @@ async function tradeAmm() {
         url: websocket_status,
         onMessage: async ({ data, wsClose }: { data: any, wsClose: any }) => {
           if ((data.payload.tx_type == 'OfferCreate') || (data.payload.tx_type == 'Payment')) {
-            const result = await API.getAmm({ issuer: issuer.value, currency: currency.value })            
-            ammObject.value = result;            
+            const result = await API.getAmm({ issuer: issuer.value, currency: currency.value })
+            ammObject.value = result;
             await updateBalances()
             modal.close()
             resolve('something')
             wsClose()
-          } else {
-            console.log('ignored message', data)
           }
         }
       })

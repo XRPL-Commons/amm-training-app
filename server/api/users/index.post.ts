@@ -1,5 +1,3 @@
-import { mintNft } from '~/server/connectors/wallet'
-import { getWallet } from '@/server/utils'
 import { AddUser, GetUsers } from '~/server/connectors/memory'
 import type { User } from '~/server/connectors/memory'
 

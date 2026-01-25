@@ -7,8 +7,7 @@ const getAccountInfo = async ({ xrplAddress }: { xrplAddress: string }) => {
     const accountInfoRequest: AccountInfoRequest = {
         command: 'account_info',
         account: xrplAddress
-    };    
-    // console.log(accountInfoRequest)
+    };
     const accountInfoResponse: AccountLinesResponse = await client.request(accountInfoRequest);    
 
     return accountInfoResponse;

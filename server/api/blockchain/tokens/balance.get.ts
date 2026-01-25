@@ -8,31 +8,22 @@ const getTokenBalance = async ({ xrplAddress, issuer, currency }: { xrplAddress:
         command: 'account_lines',
         account: xrplAddress
     };
-    const accountLinesResponse: AccountLinesResponse = await client.request(accountLinesRequest);    
-    const testtoken = accountLinesResponse.result.lines
-        .filter(line => convertPaddedHexToString(line.currency) === currency && line.account === issuer)
+    const accountLinesResponse: AccountLinesResponse = await client.request(accountLinesRequest);
+
+    // Try matching with hex-decoded currency first, then raw currency
     let token = accountLinesResponse.result.lines
-        .filter(line => convertPaddedHexToString(line.currency) === currency && line.account === issuer)
+        .filter(line => (convertPaddedHexToString(line.currency) === currency || line.currency === currency) && line.account === issuer)
         .map(line => ({
             currency: convertPaddedHexToString(line.currency),
             issuer: line.account,
             amount: line.balance
         }));
-    if (token.length === 0) {
-      token = accountLinesResponse.result.lines
-      .filter(line => line.currency === currency && line.account === issuer)
-      .map(line => ({
-          currency: convertPaddedHexToString(line.currency),
-          issuer: line.account,
-          amount: line.balance
-      }));
-    }
 
     return token;
   } catch(e) {
     throw createError({
       status: 500,
-      statusMessage: 'Unable to fetch account info'
+      statusMessage: 'Unable to fetch token balance'
     })
   } finally {
     await client.disconnect();

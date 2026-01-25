@@ -30,14 +30,6 @@ const colors = computed(() => shuffle(defaultColors.value))
 
 const shapes = shuffle([ShapesSquigle, ShapesSwoosh, ShapesStar, ShapesLine, ShapesCircle])
 const shapesAndColors = computed(() => shapes.map((shape, i) => ({ shape, color: colors.value[i] })))
-
-// onMounted(() => {
-//   setInterval(() => {
-//     updateColors(shuffle(colors.value))
-//     console.log('updating colors', colors.value)
-//     console.log(shapesAndColors.value)
-//   }, 3000)
-// })
 </script>
 
 <style>

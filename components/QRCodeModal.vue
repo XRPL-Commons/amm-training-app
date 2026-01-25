@@ -17,25 +17,19 @@ const props = defineProps(['isOpen', 'qrCodeSrc', 'isConnection', 'mobileUrl', '
 const {
   isOpen,
   qrCodeSrc,
-  isConnection,
   mobileUrl,
   uuid
 } = toRefs(props)
 
-const closeModal = () => {
-  this.$emit('close');
-}
 const onImageClick = async () => {
   if (mobileUrl && mobileUrl.value) {
     window.open(mobileUrl.value, '_blank')
-  } else {
+  } else if (uuid && uuid.value) {
     try {
-      await navigator.clipboard.writeText(value)
-      console.log('Text copied to clipboard')
+      await navigator.clipboard.writeText(uuid.value)
       alert("Copied to clipboard. Paste in Xaman to continue.")
     } catch (err) {
-      console.error('Failed to copy: ', err);
-      // Optionally, fallback to another copy method or show an error message.
+      alert("Failed to copy to clipboard")
     }
   }
 }

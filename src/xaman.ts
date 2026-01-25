@@ -6,8 +6,7 @@ export async function initializeWebsocket({ url, onMessage }: { url: string, onM
     const ws = new WebSocket(url);
     /* @ts-ignore */
     ws.onmessage = async (message) => {
-      let responseObj = JSON.parse(message.data)
-      console.log(responseObj)
+      const responseObj = JSON.parse(message.data)
       const { signed, payload_uuidv4 } = responseObj
   
       // only handle signed messages
@@ -17,9 +16,7 @@ export async function initializeWebsocket({ url, onMessage }: { url: string, onM
   
       // get payload from backend
       const data: any = await API.XamanGetPayload({ uuid: payload_uuidv4 })
-  
-      console.log({ data })
-  
+
       // check network
       /* @ts-ignore */
       const runtimeConfig = useRuntimeConfig()
