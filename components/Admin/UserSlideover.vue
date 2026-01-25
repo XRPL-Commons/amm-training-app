@@ -7,13 +7,23 @@
           <h2 class="text-xl font-title text-gray-800 dark:text-white">{{ user?.name }}</h2>
           <UButton color="gray" variant="ghost" icon="i-heroicons-x-mark" @click="isOpen = false" />
         </div>
-        <ColoredAddress v-if="user?.xrplAddress" :address="user.xrplAddress" variant="boxes" />
+        <div class="flex items-center gap-2">
+          <ColoredAddress v-if="user?.xrplAddress" :address="user.xrplAddress" variant="boxes" />
+          <UButton
+            v-if="user?.xrplAddress"
+            color="gray"
+            variant="ghost"
+            icon="i-heroicons-clipboard-document"
+            size="xs"
+            @click="copyAddress"
+          />
+        </div>
       </div>
 
       <!-- Scrollable Content -->
       <div class="p-6 pt-4 flex-1 overflow-y-auto">
         <!-- Account Info -->
-      <div class="mb-6" v-if="accountInfo">
+      <div class="mb-6" v-if="isDataForCurrentUser && accountInfo">
         <div class="text-xs text-gray-500 uppercase mb-2">XRP Balance</div>
         <div class="text-2xl font-bold text-gray-800 dark:text-white">
           {{ formatXrp(accountInfo.result?.account_data?.Balance) }} XRP
@@ -24,11 +34,11 @@
       <div>
         <div class="text-xs text-gray-500 uppercase mb-3">Tokens</div>
 
-        <div v-if="loading" class="text-center py-8 text-gray-500">
+        <div v-if="!isDataForCurrentUser || (loading && !initialized)" class="text-center py-8 text-gray-500">
           <Icon name="heroicons:arrow-path" class="w-6 h-6 animate-spin" />
         </div>
 
-        <div v-else-if="regularTokens.length === 0" class="text-center py-8 text-gray-500">
+        <div v-else-if="initialized && regularTokens.length === 0" class="text-center py-8 text-gray-500">
           No tokens found
         </div>
 
@@ -77,7 +87,7 @@
       </div>
 
       <!-- LP Tokens / Pool Positions -->
-      <div v-if="lpTokensWithPool.length > 0" class="mt-6">
+      <div v-if="isDataForCurrentUser && lpTokensWithPool.length > 0" class="mt-6">
         <div class="text-xs text-gray-500 uppercase mb-3">Pool Positions</div>
         <div class="space-y-2">
           <div
@@ -196,6 +206,9 @@
 import { ref, watch } from 'vue'
 import API from '~/server/client'
 
+const toast = useToast()
+const { cache: detailsCache, loadingAddresses, loadDetails, refreshTokens } = useUserDetails()
+
 interface User {
   xrplAddress: string
   name: string
@@ -209,17 +222,6 @@ interface Token {
   limit: string
   isLPToken: boolean
   hasAmm?: boolean
-}
-
-interface PoolInfo {
-  asset1: { currency: string; amount: string; issuer?: string }
-  asset2: { currency: string; amount: string; issuer?: string }
-  tradingFee: string
-  account: string
-}
-
-interface LPTokenWithPool extends Token {
-  poolInfo?: PoolInfo | null
 }
 
 const props = defineProps<{
@@ -237,13 +239,21 @@ const isOpen = computed({
   set: (value) => emit('update:modelValue', value)
 })
 
-const loading = ref(false)
-const tokens = ref<Token[]>([])
-const lpTokensWithPool = ref<LPTokenWithPool[]>([])
-const accountInfo = ref<any>(null)
 const trustlineLoading = ref<string | null>(null)
 
+// Get cached details from composable (direct cache access for reactivity)
+const details = computed(() => props.user ? detailsCache[props.user.xrplAddress] : null)
+const loading = computed(() => props.user ? loadingAddresses.has(props.user.xrplAddress) : false)
+
+// Derived state from cached details
+const tokens = computed(() => details.value?.tokens || [])
+const lpTokensWithPool = computed(() => details.value?.lpTokensWithPool || [])
+const accountInfo = computed(() => details.value?.accountInfo || null)
+const initialized = computed(() => details.value?.initialized || false)
 const regularTokens = computed(() => tokens.value.filter(t => !t.isLPToken))
+
+// Data is always for current user since it comes from cache keyed by address
+const isDataForCurrentUser = computed(() => !!details.value)
 
 // QR Modal state
 const showQrModal = ref(false)
@@ -257,63 +267,13 @@ const newLimit = ref('')
 
 watch(() => props.user, async (newUser) => {
   if (newUser) {
-    await loadData()
+    await loadDetails(newUser.xrplAddress)
   }
 }, { immediate: true })
 
 async function loadData() {
   if (!props.user) return
-  loading.value = true
-  tokens.value = []
-  lpTokensWithPool.value = []
-  accountInfo.value = null
-
-  try {
-    const [tokensResult, accountResult] = await Promise.all([
-      API.getTokens({ xrplAddress: props.user.xrplAddress }),
-      API.getAccountInfo({ xrplAddress: props.user.xrplAddress })
-    ])
-    accountInfo.value = accountResult
-
-    // Check AMM existence for regular tokens
-    const regularTokens = tokensResult.filter((t: Token) => !t.isLPToken)
-    const ammCheckPromises = regularTokens.map(async (token: Token) => {
-      try {
-        const amm = await API.getAmm({ issuer: token.issuer, currency: token.currency })
-        return { ...token, hasAmm: !!amm }
-      } catch {
-        return { ...token, hasAmm: false }
-      }
-    })
-    const tokensWithAmmCheck = await Promise.all(ammCheckPromises)
-
-    // Combine with LP tokens
-    const lpTokens = tokensResult.filter((t: Token) => t.isLPToken)
-    tokens.value = [...tokensWithAmmCheck, ...lpTokens]
-
-    // Fetch pool info for LP tokens
-    const poolInfoPromises = lpTokens.map(async (token: Token) => {
-      const poolInfo = await API.getAmmByAccount({ ammAccount: token.issuer })
-      return { ...token, poolInfo }
-    })
-    lpTokensWithPool.value = await Promise.all(poolInfoPromises)
-  } catch (error) {
-    console.error('Failed to load user data:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-async function loadTokens() {
-  if (!props.user) return
-  loading.value = true
-  try {
-    tokens.value = await API.getTokens({ xrplAddress: props.user.xrplAddress })
-  } catch (error) {
-    console.error('Failed to load tokens:', error)
-  } finally {
-    loading.value = false
-  }
+  await loadDetails(props.user.xrplAddress, true)
 }
 
 function openLimitModal(token: Token) {
@@ -359,7 +319,9 @@ async function setTrustline(token: Token, limit?: string) {
       if (data.signed === true) {
         showQrModal.value = false
         ws.close()
-        await loadTokens()
+        if (props.user) {
+          await refreshTokens(props.user.xrplAddress)
+        }
       }
     }
   } catch (error) {
@@ -367,6 +329,13 @@ async function setTrustline(token: Token, limit?: string) {
     alert('Failed to create trustline')
   } finally {
     trustlineLoading.value = null
+  }
+}
+
+function copyAddress() {
+  if (props.user?.xrplAddress) {
+    navigator.clipboard.writeText(props.user.xrplAddress)
+    toast.add({ title: 'Address copied', icon: 'i-heroicons-clipboard-document-check' })
   }
 }
 

@@ -78,6 +78,11 @@ const actions = [
     name: 'clearUsers',
     path: '/api/users/clear',
     method: 'POST'
+  },
+  {
+    name: 'refreshUserStats',
+    path: '/api/users/refresh-stats',
+    method: 'POST'
   }
 ]
 
@@ -167,6 +172,12 @@ api.deleteUser = async ({ address }: { address: string }) => {
     headers
   })
   if (!response.ok) throw new Error('Failed to delete user')
+  return response.json()
+}
+
+api.getUserStats = async ({ address }: { address: string }) => {
+  const response = await fetch(`/api/users/${encodeURIComponent(address)}/stats`)
+  if (!response.ok) throw new Error('Failed to get user stats')
   return response.json()
 }
 

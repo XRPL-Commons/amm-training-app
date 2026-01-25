@@ -1,6 +1,6 @@
 <template>
   <UModal :model-value="true">
-    <div class="p-6">
+    <form class="p-6" @submit.prevent="joinTraining">
       <!-- Header -->
       <div class="flex items-center justify-between mb-6">
         <h3 class="text-lg font-title text-gray-800 dark:text-white">Join Training</h3>
@@ -21,9 +21,9 @@
       <!-- Footer -->
       <div class="flex justify-end gap-2 mt-6">
         <UButton color="primary" variant="ghost" @click="closeModal" :disabled="joining">Cancel</UButton>
-        <UButton color="primary" @click="joinTraining" :loading="joining">Join</UButton>
+        <UButton type="submit" color="primary" :loading="joining">Join</UButton>
       </div>
-    </div>
+    </form>
   </UModal>
 </template>
 

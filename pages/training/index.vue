@@ -1,40 +1,39 @@
 <template>
   <div class="w-full max-w-4xl mx-auto px-4 py-8">
-    <!-- Header -->
+    <!-- Page Header -->
     <div class="flex items-center justify-between mb-6">
-      <h1 class="text-2xl font-title text-black dark:text-white">Training Session</h1>
-      <div class="flex items-center gap-2">
-        <!-- Connect button when not connected -->
-        <UButton v-if="!isConnected" color="primary" @click="connectWallet" icon="i-heroicons-wallet">
-          Connect
-        </UButton>
-        <!-- Show address + Join button if connected but not registered -->
-        <template v-else-if="!currentUser">
-          <ColoredAddress :address="xrplAddress" variant="boxes" />
-          <UButton color="primary" @click="joinTraining" icon="i-heroicons-user-plus">
-            Join
-          </UButton>
-        </template>
-        <!-- Show current user info if registered -->
-        <div v-else class="flex items-center gap-2">
-          <span class="text-sm text-gray-600 dark:text-gray-400">{{ currentUser.name }}</span>
-          <ColoredAddress :address="xrplAddress" variant="boxes" />
-        </div>
-        <!-- Disconnect button -->
-        <UTooltip v-if="isConnected" text="Disconnect wallet">
-          <UButton color="gray" variant="ghost" icon="i-heroicons-arrow-right-on-rectangle" @click="disconnectWallet" />
-        </UTooltip>
-      </div>
+      <h1 class="text-2xl font-title text-black dark:text-white">Current Session</h1>
+      <!-- Join button if connected but not registered -->
+      <UButton
+        v-if="isConnected && !currentUser && usersLoaded"
+        color="primary"
+        @click="joinTraining"
+        icon="i-heroicons-user-plus"
+      >
+        Join Session
+      </UButton>
     </div>
 
     <!-- Participants -->
     <div class="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       <div class="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
-        <div class="flex items-center gap-2">
-          <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Participants</span>
-          <span class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full text-xs">
-            {{ users.length }}
-          </span>
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-medium text-gray-600 dark:text-gray-400">Participants</span>
+            <span class="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-0.5 rounded-full text-xs">
+              {{ users.length }}
+            </span>
+          </div>
+          <UTooltip text="Refresh stats">
+            <UButton
+              color="gray"
+              variant="ghost"
+              icon="i-heroicons-arrow-path"
+              size="xs"
+              :loading="loading"
+              @click="refreshStats"
+            />
+          </UTooltip>
         </div>
       </div>
 
@@ -42,25 +41,28 @@
         No participants yet. Be the first to join!
       </div>
 
-      <table v-else class="w-full text-sm text-left">
-        <thead class="text-xs uppercase bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
-          <tr>
-            <th class="py-3 px-4">Name</th>
-            <th class="py-3 px-4">Address</th>
-          </tr>
-        </thead>
-        <tbody class="text-gray-700 dark:text-gray-300">
-          <tr
-            v-for="user in users"
-            :key="user.xrplAddress"
-            class="border-t border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer transition-colors"
-            @click="openUserDetails(user)"
-          >
-            <td class="py-3 px-4 font-medium">{{ user.name }}</td>
-            <td class="py-3 px-4"><ColoredAddress :address="user.xrplAddress" /></td>
-          </tr>
-        </tbody>
-      </table>
+      <UTable
+        v-else
+        :rows="users"
+        :columns="columns"
+        :sort="sort"
+        @update:sort="sort = $event"
+        :ui="{ tr: { base: 'cursor-pointer' } }"
+        @select="openUserDetails"
+      >
+        <template #name-data="{ row }">
+          <span class="font-medium">{{ row.name }}</span>
+        </template>
+        <template #xrplAddress-data="{ row }">
+          <ColoredAddress :address="row.xrplAddress" variant="boxes" />
+        </template>
+        <template #tokenCount-data="{ row }">
+          <span class="text-gray-500">{{ row.tokenCount ?? '-' }}</span>
+        </template>
+        <template #poolCount-data="{ row }">
+          <span class="text-gray-500">{{ row.poolCount ?? '-' }}</span>
+        </template>
+      </UTable>
     </div>
 
     <!-- User Details Slideover -->
@@ -82,22 +84,26 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import type { UserObject } from '~/src/types'
-import { QRCodeModal, JoinTrainingModal } from '#components'
-import API from '~/server/client'
+import { JoinTrainingModal } from '#components'
 
 const route = useRoute()
 const router = useRouter()
 const modal = useModal()
 
-// wallet
-const userToken = ref('')
-const xrplAddress = ref('')
+// Wallet (from composable)
+const { isConnected, xrplAddress, currentUser: walletUser, loadFromStorage, connectWallet, setCurrentUser } = useWallet()
 
-// users (from composable)
-const { users, fetchUsers, findUser } = useUsers()
+// Users (from composable)
+const { users, loading, fetchUsers, refreshStats, refreshUserStats, findUser } = useUsers()
 
-// Computed: connection status
-const isConnected = computed(() => !!xrplAddress.value)
+// Table columns and sorting
+const columns = [
+  { key: 'name', label: 'Name', sortable: true },
+  { key: 'xrplAddress', label: 'Address' },
+  { key: 'tokenCount', label: 'Tokens', sortable: true },
+  { key: 'poolCount', label: 'Pools', sortable: true }
+]
+const sort = ref({ column: 'name', direction: 'asc' as const })
 
 // Computed: current user (if registered)
 const currentUser = computed(() => {
@@ -105,11 +111,26 @@ const currentUser = computed(() => {
   return findUser(xrplAddress.value)
 })
 
+// Sync current user to wallet composable
+watch(currentUser, (user) => {
+  setCurrentUser(user)
+}, { immediate: true })
+
 // Slideover state
 const showUserSlideover = ref(false)
 const showAmmSlideover = ref(false)
 const selectedUser = ref<UserObject | null>(null)
 const selectedToken = ref<{ currency: string; issuer: string; amount: string } | null>(null)
+
+// Keep selectedUser in sync with users array when stats are refreshed
+watch(users, (newUsers) => {
+  if (selectedUser.value) {
+    const updated = newUsers.find(u => u.xrplAddress === selectedUser.value?.xrplAddress)
+    if (updated) {
+      selectedUser.value = updated
+    }
+  }
+}, { deep: true })
 
 // Watch URL query changes to open slideovers
 watch(() => route.query, async (query) => {
@@ -170,15 +191,18 @@ watch([isConnected, currentUser, usersLoaded], ([connected, user, loaded]) => {
 })
 
 onMounted(async () => {
-  userToken.value = localStorage.getItem('user_token') || ''
-  xrplAddress.value = localStorage.getItem('xrpl_address') || ''
+  // Load wallet state from storage
+  await loadFromStorage()
 
   // Fetch users first
   await fetchUsers()
   usersLoaded.value = true
 
+  // Refresh stats in background (non-blocking)
+  refreshStats()
+
   // Connect wallet if not connected
-  if (!userToken.value || !xrplAddress.value) {
+  if (!isConnected.value) {
     await connectWallet()
   }
 })
@@ -189,6 +213,8 @@ function openUserDetails(user: UserObject) {
   showUserSlideover.value = true
   const { amm, ...rest } = route.query
   router.replace({ query: { ...rest, user: user.xrplAddress } })
+  // Refresh stats for this user in the background
+  refreshUserStats(user.xrplAddress)
 }
 
 function openUserDetailsByAddress(address: string) {
@@ -202,6 +228,8 @@ function openUserDetailsByAddress(address: string) {
     showUserSlideover.value = true
     const { amm, ...rest } = route.query
     router.replace({ query: { ...rest, user: address } })
+    // Refresh stats for this user in the background
+    refreshUserStats(address)
   }
 }
 
@@ -212,83 +240,6 @@ async function openAmmDetails(token: { currency: string; issuer: string; amount:
   showAmmSlideover.value = true
   const { user, ...rest } = route.query
   router.replace({ query: { ...rest, amm: `${token.currency}:${token.issuer}` } })
-}
-
-function connectWallet() {
-  return new Promise(async (resolve, reject) => {
-    try {
-      const payload = await API.XamanSignIn()
-
-      const qrCodeSrc = payload.refs.qr_png
-      const mobileUrl = payload.next.always
-      const websocket_status = payload.refs.websocket_status
-
-      modal.open(QRCodeModal, {
-        qrCodeSrc,
-        mobileUrl
-      })
-
-      await initializeWebSocket({
-        url: websocket_status,
-        onMessage: async ({ data, wsClose }: { data: any; wsClose: any }) => {
-          if (data.payload.tx_type == 'SignIn') {
-            xrplAddress.value = data.response.account
-            userToken.value = data.application.issued_user_token
-            localStorage.setItem('xrpl_address', xrplAddress.value)
-            localStorage.setItem('user_token', userToken.value)
-            modal.close()
-            wsClose()
-
-            // Check if user is registered, if not prompt to join
-            if (!findUser(xrplAddress.value)) {
-              await nextTick()
-              joinTraining()
-            }
-
-            resolve(xrplAddress.value)
-          }
-        }
-      })
-    } catch (error) {
-      alert('Error connecting to Xaman: ' + error)
-      reject(error)
-    }
-  })
-}
-
-function disconnectWallet() {
-  localStorage.removeItem('xrpl_address')
-  localStorage.removeItem('user_token')
-  xrplAddress.value = ''
-  userToken.value = ''
-}
-
-async function initializeWebSocket({ url, onMessage }: { url: string; onMessage?: any }) {
-  const ws = new WebSocket(url)
-  ws.onmessage = async (message) => {
-    const responseObj = JSON.parse(message.data)
-    const { signed, payload_uuidv4 } = responseObj
-
-    if (signed !== true || !payload_uuidv4) {
-      return
-    }
-
-    const data: any = await API.XamanGetPayload({ uuid: payload_uuidv4 })
-
-    const runtimeConfig = useRuntimeConfig()
-    if (data.response.environment_nodetype !== runtimeConfig.public.network) {
-      alert('Wrong network: please use ' + runtimeConfig.public.network)
-      await connectWallet()
-      return
-    }
-
-    await onMessage({
-      data,
-      wsClose: () => ws.close()
-    })
-  }
-
-  return ws
 }
 
 function joinTraining() {

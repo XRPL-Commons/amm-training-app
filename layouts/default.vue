@@ -10,11 +10,27 @@
             <img src="/xrplb.png" class="h-8 opacity-80 dark:invisible dark:hidden" />
 
           </div>
-          <div class="ml-2 md:text-4xl text-xl font-title text-black dark:text-white">XRPL Training</div>
+          <div class="ml-2 md:text-4xl text-xl font-title text-black dark:text-white">AMM Training</div>
         </NuxtLink>
       </div>
 
-      <div class="pl-1 flex">
+      <div class="pl-1 flex items-center gap-3">
+        <!-- Wallet controls -->
+        <div class="flex items-center gap-2">
+          <!-- Connect button when not connected -->
+          <UButton v-if="!isConnected" color="primary" size="sm" @click="connect" icon="i-heroicons-wallet">
+            Connect
+          </UButton>
+          <!-- Clickable profile area if connected -->
+          <button
+            v-else
+            class="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-2 hover:opacity-80 transition-opacity cursor-pointer"
+            @click="showProfileModal = true"
+          >
+            <span v-if="currentUser" class="text-sm text-gray-600 dark:text-gray-400">{{ currentUser.name }}</span>
+            <ColoredAddress :address="xrplAddress" variant="bars" />
+          </button>
+        </div>
         <ColorMode />
       </div>
     </div>
@@ -24,7 +40,64 @@
   <div class="pt-20 pr-4 pl-4 sm:pr-4 sm:pl-4 relative overflow-auto">
     <slot />
   </div>
+
+  <!-- Profile Modal -->
+  <UModal v-model="showProfileModal">
+    <div class="p-6">
+      <h3 class="text-lg font-title text-gray-900 dark:text-white mb-4">Your Profile</h3>
+
+      <div v-if="currentUser" class="mb-4">
+        <div class="text-xs text-gray-500 uppercase mb-1">Name</div>
+        <div class="text-lg font-medium text-gray-800 dark:text-white">{{ currentUser.name }}</div>
+      </div>
+
+      <div class="mb-6">
+        <div class="text-xs text-gray-500 uppercase mb-1">Address</div>
+        <div class="flex items-center gap-2">
+          <ColoredAddress :address="xrplAddress" variant="boxes" />
+          <UButton
+            color="gray"
+            variant="ghost"
+            icon="i-heroicons-clipboard-document"
+            size="xs"
+            @click="copyAddress"
+          />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2">
+        <UButton color="primary" variant="ghost" @click="showProfileModal = false">
+          Close
+        </UButton>
+        <UButton color="red" variant="soft" @click="handleDisconnect" icon="i-heroicons-arrow-right-on-rectangle">
+          Disconnect
+        </UButton>
+      </div>
+    </div>
+  </UModal>
 </template>
 
 <script lang="ts" setup>
+const { isConnected, xrplAddress, currentUser, loadFromStorage, connectWallet, disconnectWallet } = useWallet()
+const toast = useToast()
+
+const showProfileModal = ref(false)
+
+onMounted(() => {
+  loadFromStorage()
+})
+
+async function connect() {
+  await connectWallet()
+}
+
+function handleDisconnect() {
+  disconnectWallet()
+  showProfileModal.value = false
+}
+
+function copyAddress() {
+  navigator.clipboard.writeText(xrplAddress.value)
+  toast.add({ title: 'Address copied', icon: 'i-heroicons-clipboard-document-check' })
+}
 </script>

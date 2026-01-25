@@ -59,8 +59,11 @@
           </span>
         </div>
         <div class="flex items-center gap-2">
-          <UTooltip text="Refresh">
+          <UTooltip text="Refresh list">
             <UButton @click="refreshUsers" color="gray" variant="ghost" size="sm" icon="i-heroicons-arrow-path" />
+          </UTooltip>
+          <UTooltip text="Refresh token/pool stats">
+            <UButton @click="refreshUserStats" color="gray" variant="ghost" size="sm" icon="i-heroicons-chart-bar" :loading="refreshingStats" />
           </UTooltip>
           <UTooltip text="Download backup">
             <UButton @click="downloadBackup" color="gray" variant="ghost" size="sm" icon="i-heroicons-arrow-down-tray" />
@@ -92,6 +95,8 @@
           <tr>
             <th class="py-3 px-4">Name</th>
             <th class="py-3 px-4">Address</th>
+            <th class="py-3 px-4">Tokens</th>
+            <th class="py-3 px-4">Pools</th>
             <th class="py-3 px-4">Joined</th>
             <th class="py-3 px-4 text-right">Actions</th>
           </tr>
@@ -107,6 +112,12 @@
             </td>
             <td class="py-3 px-4 cursor-pointer" @click="openUserDetails(user)">
               <ColoredAddress :address="user.xrplAddress" variant="boxes" />
+            </td>
+            <td class="py-3 px-4 text-gray-500">
+              {{ user.tokenCount ?? '-' }}
+            </td>
+            <td class="py-3 px-4 text-gray-500">
+              {{ user.poolCount ?? '-' }}
             </td>
             <td class="py-3 px-4 text-gray-500 text-xs">
               <div>{{ formatDate(user.createdAt) }}</div>
@@ -232,6 +243,8 @@ interface User {
   xrplAddress: string
   name: string
   createdAt: string
+  tokenCount?: number
+  poolCount?: number
 }
 
 interface Token {
@@ -251,6 +264,7 @@ const loggingIn = ref(false)
 const users = ref<User[]>([])
 const restoreStatus = ref('')
 const fileInput = ref<HTMLInputElement | null>(null)
+const refreshingStats = ref(false)
 
 // Slideover state
 const showUserSlideover = ref(false)
@@ -391,6 +405,18 @@ async function refreshUsers() {
     users.value = await API.getUsers({})
   } catch (error) {
     console.error('Failed to fetch users:', error)
+  }
+}
+
+async function refreshUserStats() {
+  refreshingStats.value = true
+  try {
+    const result = await API.refreshUserStats({})
+    users.value = result.users
+  } catch (error) {
+    console.error('Failed to refresh user stats:', error)
+  } finally {
+    refreshingStats.value = false
   }
 }
 

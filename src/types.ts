@@ -1,6 +1,9 @@
-export interface UserObject {  
+export interface UserObject {
     xrplAddress: string;
     name: string;
+    createdAt?: string;
+    tokenCount?: number;
+    poolCount?: number;
 };
 
 export interface TokenObject {  

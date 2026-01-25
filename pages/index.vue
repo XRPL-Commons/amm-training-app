@@ -55,7 +55,7 @@
         trailing
       />
 
-      <p class="text-sm text-gray-500 mt-4">
+      <p class="text-sm text-white mt-4">
         Running on XRPL Testnet
       </p>
     </div>

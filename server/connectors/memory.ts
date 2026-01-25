@@ -2,6 +2,8 @@ export type User = {
   xrplAddress: string;
   name: string;
   createdAt: string;
+  tokenCount?: number;
+  poolCount?: number;
 };
 
 let users: User[] = [];
@@ -42,7 +44,7 @@ export const GetUsers = async (
 
 export const UpdateUser = async (
   xrplAddress: string,
-  updates: { name?: string }
+  updates: { name?: string; tokenCount?: number; poolCount?: number }
 ): Promise<User | null> => {
   const userIndex = users.findIndex((user) => user.xrplAddress === xrplAddress);
 
@@ -59,6 +61,14 @@ export const UpdateUser = async (
       throw new Error('Name already taken');
     }
     users[userIndex].name = updates.name;
+  }
+
+  if (updates.tokenCount !== undefined) {
+    users[userIndex].tokenCount = updates.tokenCount;
+  }
+
+  if (updates.poolCount !== undefined) {
+    users[userIndex].poolCount = updates.poolCount;
   }
 
   return users[userIndex];
