@@ -13,6 +13,11 @@ const actions = [
     method: 'GET'
   },
   {
+    name: 'listUsers',
+    path: '/api/users/list',
+    method: 'GET'
+  },
+  {
     name: 'createUser',
     path: '/api/users',
     method: 'POST'

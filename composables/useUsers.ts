@@ -8,7 +8,7 @@ export function useUsers() {
   async function fetchUsers() {
     loading.value = true
     try {
-      users.value = await API.getUsers({})
+      users.value = await API.listUsers({})
     } finally {
       loading.value = false
     }
