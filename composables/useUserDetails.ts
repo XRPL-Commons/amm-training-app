@@ -26,6 +26,8 @@ interface UserDetails {
   tokens: Token[]
   lpTokensWithPool: LPTokenWithPool[]
   accountInfo: any
+  pubkey: string | null
+  pubkeyLoading: boolean
   initialized: boolean
 }
 
@@ -77,15 +79,23 @@ export function useUserDetails() {
       const lpTokens = tokensResult.filter((t: Token) => t.isLPToken)
       const allTokens = [...tokensWithAmmCheck, ...lpTokens]
 
-      // Preserve existing lpTokensWithPool during refresh to avoid UI shift
+      // Preserve existing lpTokensWithPool and pubkey during refresh to avoid UI shift
       const existingLpTokens = cache[xrplAddress]?.lpTokensWithPool || []
+      const existingPubkey = cache[xrplAddress]?.pubkey ?? null
 
       // Update cache reactively - this will trigger UI updates
       cache[xrplAddress] = {
         tokens: allTokens,
         lpTokensWithPool: existingLpTokens,
         accountInfo: accountResult,
+        pubkey: existingPubkey,
+        pubkeyLoading: existingPubkey === null, // Only loading if no cached pubkey
         initialized: true
+      }
+
+      // Fetch pubkey in background if not already cached
+      if (existingPubkey === null) {
+        fetchPubKey(xrplAddress)
       }
 
       // Fetch pool info for LP tokens (continues in background)
@@ -127,6 +137,28 @@ export function useUserDetails() {
   // Refresh tokens after trustline change
   async function refreshTokens(xrplAddress: string): Promise<void> {
     await loadDetails(xrplAddress, true)
+  }
+
+  // Fetch pubkey for an address and update cache
+  async function fetchPubKey(xrplAddress: string): Promise<void> {
+    if (!cache[xrplAddress]) return
+
+    cache[xrplAddress].pubkeyLoading = true
+    try {
+      const result = await API.getAccountPubKey({ xrplAddress })
+      if (cache[xrplAddress]) {
+        cache[xrplAddress].pubkey = result.pubkey
+      }
+    } catch {
+      // No pubkey found (no signed transactions) - leave as null
+      if (cache[xrplAddress]) {
+        cache[xrplAddress].pubkey = null
+      }
+    } finally {
+      if (cache[xrplAddress]) {
+        cache[xrplAddress].pubkeyLoading = false
+      }
+    }
   }
 
   return {
