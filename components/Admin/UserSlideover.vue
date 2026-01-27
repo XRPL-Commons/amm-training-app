@@ -30,6 +30,25 @@
         </div>
       </div>
 
+      <!-- Public Key -->
+      <div class="mb-6" v-if="isDataForCurrentUser">
+        <div class="text-xs text-gray-500 uppercase mb-2">Public Key</div>
+        <div v-if="pubkeyLoading" class="text-gray-500">
+          <Icon name="heroicons:arrow-path" class="w-4 h-4 animate-spin" />
+        </div>
+        <div v-else-if="pubkey" class="flex items-center gap-2">
+          <span class="text-xs font-mono text-gray-700 dark:text-gray-300 break-all">{{ pubkey }}</span>
+          <UButton
+            color="gray"
+            variant="ghost"
+            icon="i-heroicons-clipboard-document"
+            size="xs"
+            @click="copyPubKey"
+          />
+        </div>
+        <div v-else class="text-xs text-gray-400">No public key found (no signed transactions)</div>
+      </div>
+
       <!-- Tokens -->
       <div>
         <div class="text-xs text-gray-500 uppercase mb-3">Tokens</div>
@@ -206,6 +225,10 @@ const toast = useToast()
 const { cache: detailsCache, loadingAddresses, loadDetails } = useUserDetails()
 const { getTrustlineFor, walletDataInitialized, refreshWalletData, xrplAddress: connectedAddress, userToken: connectedUserToken } = useWallet()
 
+// Public key state
+const pubkey = ref<string | null>(null)
+const pubkeyLoading = ref(false)
+
 // Trustline modal state
 const showTrustlineModal = ref(false)
 const editingToken = ref<Token | null>(null)
@@ -272,18 +295,40 @@ const isDataForCurrentUser = computed(() => !!details.value)
 watch(() => props.user, async (newUser) => {
   if (newUser) {
     await loadDetails(newUser.xrplAddress)
+    fetchPubKey(newUser.xrplAddress)
   }
 }, { immediate: true })
 
 async function loadData() {
   if (!props.user) return
   await loadDetails(props.user.xrplAddress, true)
+  fetchPubKey(props.user.xrplAddress)
+}
+
+async function fetchPubKey(xrplAddress: string) {
+  pubkeyLoading.value = true
+  pubkey.value = null
+  try {
+    const result = await API.getAccountPubKey({ xrplAddress })
+    pubkey.value = result.pubkey
+  } catch {
+    pubkey.value = null
+  } finally {
+    pubkeyLoading.value = false
+  }
 }
 
 function copyAddress() {
   if (props.user?.xrplAddress) {
     navigator.clipboard.writeText(props.user.xrplAddress)
     toast.add({ title: 'Address copied', icon: 'i-heroicons-clipboard-document-check' })
+  }
+}
+
+function copyPubKey() {
+  if (pubkey.value) {
+    navigator.clipboard.writeText(pubkey.value)
+    toast.add({ title: 'Public key copied', icon: 'i-heroicons-clipboard-document-check' })
   }
 }
 

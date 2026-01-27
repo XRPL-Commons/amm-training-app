@@ -43,6 +43,11 @@ const actions = [
     method: 'GET'
   },
   {
+    name: 'getAccountPubKey',
+    path: '/api/blockchain/account/pubkey',
+    method: 'GET'
+  },
+  {
     name: 'getAmm',
     path: '/api/blockchain/amm',
     method: 'GET'
