@@ -104,7 +104,7 @@ definePageMeta({
   middleware: 'training-client'
 })
 
-const { userWallet, customToken, unlockNextStep } = useTrainingProgress()
+const { userWallet, customToken, unlockNextStep, participantName } = useTrainingProgress()
 const router = useRouter()
 const config = useRuntimeConfig()
 
@@ -248,10 +248,23 @@ const createPool = async () => {
         asset2: { currency: 'XRP' }
       })
       const ammAccount = ammInfoRes.result.amm.account
-      await API.updateUser({
-        address: user.address,
-        ammAccount
-      })
+      try {
+        await API.updateUser({
+          address: user.address,
+          tokenCurrency: customToken.value.currency,
+          tokenIssuer: customToken.value.issuer,
+          ammAccount
+        })
+      } catch (updateErr: any) {
+        // User may not exist in memory (server restart) — re-create then update
+        await API.createUser({ xrplAddress: user.address, name: participantName.value || 'Participant' }).catch(() => {})
+        await API.updateUser({
+          address: user.address,
+          tokenCurrency: customToken.value.currency,
+          tokenIssuer: customToken.value.issuer,
+          ammAccount
+        })
+      }
     } catch (e) {
       console.warn('Could not save ammAccount to server:', e)
     }

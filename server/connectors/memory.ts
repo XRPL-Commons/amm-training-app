@@ -1,19 +1,49 @@
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
+import { join, dirname } from 'path'
+
 export type User = {
   xrplAddress: string;
   name: string;
   createdAt: string;
   tokenCount?: number;
   poolCount?: number;
-  // Training progress fields
-  tokenCurrency?: string;   // e.g. 'USD' or 40-char hex
-  tokenIssuer?: string;     // issuer wallet address
-  ammAccount?: string;      // AMM pool's own XRPL account address
+  tokenCurrency?: string;
+  tokenIssuer?: string;
+  ammAccount?: string;
 };
 
-let users: User[] = [];
+// Persistent JSON file path — lives in project root's .data/ directory
+const DATA_DIR = join(process.cwd(), '.data')
+const STORE_PATH = join(DATA_DIR, 'users.json')
+
+// In-memory cache (synced with disk)
+let users: User[] = loadFromDisk()
+
+function loadFromDisk(): User[] {
+  try {
+    if (existsSync(STORE_PATH)) {
+      return JSON.parse(readFileSync(STORE_PATH, 'utf-8'))
+    }
+  } catch (e) {
+    console.warn('[store] Failed to read users.json, starting fresh:', e)
+  }
+  return []
+}
+
+function persist(): void {
+  try {
+    if (!existsSync(DATA_DIR)) {
+      mkdirSync(DATA_DIR, { recursive: true })
+    }
+    writeFileSync(STORE_PATH, JSON.stringify(users, null, 2))
+  } catch (e) {
+    console.error('[store] Failed to persist users.json:', e)
+  }
+}
 
 export const clearMemory = (): void => {
   users = [];
+  persist();
 };
 
 export const AddUser = async (userObject: User): Promise<User> => {
@@ -27,6 +57,7 @@ export const AddUser = async (userObject: User): Promise<User> => {
   }
 
   users.push(userObject);
+  persist();
   return userObject;
 };
 
@@ -56,7 +87,6 @@ export const UpdateUser = async (
     return null;
   }
 
-  // Check if new name conflicts with existing user
   if (updates.name) {
     const nameExists = users.find(
       (user) => user.name === updates.name && user.xrplAddress !== xrplAddress
@@ -87,6 +117,7 @@ export const UpdateUser = async (
     users[userIndex].ammAccount = updates.ammAccount;
   }
 
+  persist();
   return users[userIndex];
 };
 
@@ -98,6 +129,7 @@ export const DeleteUser = async (xrplAddress: string): Promise<boolean> => {
   }
 
   users.splice(userIndex, 1);
+  persist();
   return true;
 };
 
