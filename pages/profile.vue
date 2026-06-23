@@ -292,7 +292,7 @@ async function loadLpPoolDetails() {
             poolInfo: {
               asset1: { currency: 'XRP', amount: (parseInt(amm.amount as string) / 1e6).toFixed(6) },
               asset2: { currency: amm.amount2 && typeof amm.amount2 === 'object' ? amm.amount2.currency : '?', amount: amm.amount2 && typeof amm.amount2 === 'object' ? amm.amount2.value : '0' },
-              tradingFee: (amm.trading_fee / 100).toFixed(2) + '%',
+              tradingFee: (amm.trading_fee / 1000).toFixed(3) + '%',
               account: amm.account
             }
           }

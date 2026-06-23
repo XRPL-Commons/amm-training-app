@@ -43,7 +43,7 @@ export default defineEventHandler(async (_event) => {
           ammAccount: user.ammAccount!,
           xrpReserve: xrpAmount,
           tokenReserve: tokenAmount,
-          tradingFee: (amm.trading_fee / 100).toFixed(2) + '%'
+          tradingFee: (amm.trading_fee / 1000).toFixed(3) + '%'
         }
       })
     )
