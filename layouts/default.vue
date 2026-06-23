@@ -46,26 +46,59 @@
     <div class="p-6">
       <h3 class="text-lg font-title text-gray-900 dark:text-white mb-4">Your Profile</h3>
 
-      <div v-if="currentUser" class="mb-4">
-        <div class="text-xs text-gray-500 uppercase mb-1">Name</div>
-        <div class="text-lg font-medium text-gray-800 dark:text-white">{{ currentUser.name }}</div>
-      </div>
-
-      <div class="mb-6">
-        <div class="text-xs text-gray-500 uppercase mb-1">Address</div>
-        <div class="flex items-center gap-2">
-          <ColoredAddress :address="xrplAddress" variant="boxes" />
+      <div v-if="issuerWallet" class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-2">
+          <div class="text-xs text-gray-500 uppercase font-semibold">Treasury / Issuer Address</div>
+          <div class="text-xs font-bold text-blue-500">
+            <span v-if="walletDataLoading" class="inline-flex items-center gap-1">
+              <svg class="animate-spin h-3 w-3 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Loading...
+            </span>
+            <span v-else>{{ treasuryXrpBalance }} XRP</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-mono text-sm text-gray-800 dark:text-gray-200 break-all">{{ issuerWallet.address }}</span>
           <UButton
             color="gray"
             variant="ghost"
             icon="i-heroicons-clipboard-document"
             size="xs"
-            @click="copyAddress"
+            @click="copyAddress(issuerWallet.address)"
           />
         </div>
       </div>
 
-      <div class="flex justify-end gap-2">
+      <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-2">
+          <div class="text-xs text-gray-500 uppercase font-semibold">User / Receiver Address</div>
+          <div class="text-xs font-bold text-blue-500">
+            <span v-if="walletDataLoading" class="inline-flex items-center gap-1">
+              <svg class="animate-spin h-3 w-3 text-blue-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 22 6.477 22 12h-4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Loading...
+            </span>
+            <span v-else>{{ walletXrpBalance }} XRP</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-mono text-sm text-gray-800 dark:text-gray-200 break-all">{{ xrplAddress }}</span>
+          <UButton
+            color="gray"
+            variant="ghost"
+            icon="i-heroicons-clipboard-document"
+            size="xs"
+            @click="copyAddress(xrplAddress)"
+          />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-8">
         <UButton color="primary" variant="ghost" @click="showProfileModal = false">
           Close
         </UButton>
@@ -78,13 +111,23 @@
 </template>
 
 <script lang="ts" setup>
-const { isConnected, xrplAddress, currentUser, loadFromStorage, connectWallet, disconnectWallet } = useWallet()
+const { isConnected, xrplAddress, currentUser, walletXrpBalance, treasuryXrpBalance, walletDataLoading, loadFromStorage, connectWallet, disconnectWallet, refreshWalletData } = useWallet()
+const { issuerWallet, loadProgress } = useTrainingProgress()
 const toast = useToast()
 
 const showProfileModal = ref(false)
 
-onMounted(() => {
-  loadFromStorage()
+onMounted(async () => {
+  // Load wallets from localStorage first, then fetch balances
+  loadProgress()
+  await loadFromStorage()
+})
+
+// Refresh balances every time the profile modal is opened
+watch(showProfileModal, (isOpen) => {
+  if (isOpen) {
+    refreshWalletData()
+  }
 })
 
 async function connect() {
@@ -96,8 +139,8 @@ function handleDisconnect() {
   showProfileModal.value = false
 }
 
-function copyAddress() {
-  navigator.clipboard.writeText(xrplAddress.value)
+function copyAddress(address: string) {
+  navigator.clipboard.writeText(address)
   toast.add({ title: 'Address copied', icon: 'i-heroicons-clipboard-document-check' })
 }
 </script>
