@@ -4,15 +4,14 @@ export function decodeCurrency(currency: string): string {
   if (currency.length === 40 && currency.startsWith('03')) return 'LP'
   
   // Decode hex currency
-  // Strip trailing zeros that were added as padding
-  let hex = currency.replace(/0+$/, '')
-  
   let str = ''
-  for (let i = 0; i < hex.length; i += 2) {
-    const code = parseInt(hex.substr(i, 2), 16)
+  for (let i = 0; i < currency.length; i += 2) {
+    const hexByte = currency.substr(i, 2)
+    if (hexByte === '00') continue // Skip padding null bytes
+    const code = parseInt(hexByte, 16)
     if (code > 31 && code < 127) str += String.fromCharCode(code)
   }
-  return str.replace(/\0/g, '').trim() || currency.slice(0, 6)
+  return str.trim() || currency.slice(0, 6)
 }
 
 export function encodeCurrency(str: string): string {

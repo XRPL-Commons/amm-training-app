@@ -148,8 +148,8 @@ function executeSwap() { emit('executeSwap') }
 function completeTraining() { emit('completeTraining') }
 
 const formatReserve = (amountObj: any) => {
-  if (typeof amountObj === 'string') return (Number(amountObj) / 1000000).toFixed(2)
-  if (amountObj?.value) return Number(amountObj.value).toFixed(2)
+  if (typeof amountObj === 'string') return ((Number(amountObj) || 0) / 1000000).toFixed(2)
+  if (amountObj?.value) return (Number(amountObj.value) || 0).toFixed(2)
   return '0'
 }
 </script>

@@ -40,7 +40,7 @@
           </div>
           <div class="text-right">
             <div class="text-sm font-mono text-gray-700 dark:text-gray-300">
-              {{ Number(pool.xrpReserve).toFixed(2) }} XRP · {{ Number(pool.tokenReserve).toFixed(2) }} {{ pool.tokenCurrency }}
+              {{ (Number(pool.xrpReserve) || 0).toFixed(2) }} XRP · {{ (Number(pool.tokenReserve) || 0).toFixed(2) }} {{ pool.tokenCurrency }}
             </div>
             <div class="flex items-center justify-end gap-2 mt-1">
               <span class="text-xs text-gray-400">Fee {{ pool.tradingFee }}</span>
@@ -78,17 +78,17 @@
           </div>
           <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
             <span class="text-gray-500">XRP Reserve</span>
-            <span class="font-mono text-blue-600 dark:text-blue-400 font-semibold">{{ Number(previewPool.xrpReserve).toFixed(4) }} XRP</span>
+            <span class="font-mono text-blue-600 dark:text-blue-400 font-semibold">{{ (Number(previewPool.xrpReserve) || 0).toFixed(4) }} XRP</span>
           </div>
           <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
             <span class="text-gray-500">{{ previewPool.tokenCurrency }} Reserve</span>
-            <span class="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">{{ Number(previewPool.tokenReserve).toFixed(4) }} {{ previewPool.tokenCurrency }}</span>
+            <span class="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">{{ (Number(previewPool.tokenReserve) || 0).toFixed(4) }} {{ previewPool.tokenCurrency }}</span>
           </div>
           <div class="flex justify-between items-center py-2 border-b border-gray-100 dark:border-gray-700">
             <span class="text-gray-500">Spot Price</span>
             <span class="font-semibold">
-              {{ previewPool.xrpReserve && previewPool.tokenReserve
-                ? (Number(previewPool.tokenReserve) / Number(previewPool.xrpReserve)).toFixed(4)
+              {{ previewPool.xrpReserve && previewPool.tokenReserve && Number(previewPool.xrpReserve) > 0
+                ? ((Number(previewPool.tokenReserve) || 0) / (Number(previewPool.xrpReserve) || 1)).toFixed(4)
                 : '—' }}
               {{ previewPool.tokenCurrency }} per XRP
             </span>

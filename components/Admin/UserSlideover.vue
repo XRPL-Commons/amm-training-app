@@ -30,7 +30,7 @@
         </div>
         <div v-if="user?.tokenCurrency" class="mb-2">
           <div class="text-xs text-gray-500 uppercase">Token Currency</div>
-          <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ user.tokenCurrency }}</div>
+          <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ decodeCurrency(user.tokenCurrency) }}</div>
         </div>
         <div v-if="user?.tokenIssuer" class="mb-2">
           <div class="text-xs text-gray-500 uppercase">Token Issuer</div>
@@ -232,6 +232,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import API from '~/server/client'
+import { decodeCurrency } from '~/utils/currency'
 
 const toast = useToast()
 const { cache: detailsCache, loadingAddresses, loadDetails } = useUserDetails()
