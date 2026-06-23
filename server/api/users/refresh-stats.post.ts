@@ -1,5 +1,6 @@
 import { GetUsers, UpdateUser } from '~/server/connectors/memory'
-import { getExplorerClient, convertPaddedHexToString } from '~/server/utils'
+import { getExplorerClient } from '~/server/utils'
+import { decodeCurrency } from '~/utils/currency'
 import type { AccountLinesRequest, AccountLinesResponse } from 'xrpl'
 
 async function getTokenStats(xrplAddress: string) {
@@ -16,7 +17,7 @@ async function getTokenStats(xrplAddress: string) {
     let poolCount = 0
 
     for (const line of lines) {
-      const currency = convertPaddedHexToString(line.currency)
+      const currency = decodeCurrency(line.currency)
       // LP tokens have 40-character hex currency codes starting with '03'
       const isLPToken = line.currency.length === 40 && line.currency.startsWith('03')
       if (isLPToken) {

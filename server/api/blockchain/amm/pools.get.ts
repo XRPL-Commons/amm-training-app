@@ -1,6 +1,7 @@
 import type { AMMInfoRequest, AMMInfoResponse } from 'xrpl'
 import { GetUsers } from '~/server/connectors/memory'
-import { getExplorerClient, convertPaddedHexToString } from '~/server/utils'
+import { getExplorerClient } from '~/server/utils'
+import { decodeCurrency } from '~/utils/currency'
 
 export default defineEventHandler(async (_event) => {
   const client = await getExplorerClient()
@@ -31,7 +32,7 @@ export default defineEventHandler(async (_event) => {
         // Decode currency display name from hex if needed
         const rawCurrency = tokenAmountObj?.currency || user.tokenCurrency || ''
         const displayCurrency = rawCurrency.length === 40 && !rawCurrency.startsWith('03')
-          ? convertPaddedHexToString(rawCurrency)
+          ? decodeCurrency(rawCurrency)
           : rawCurrency
 
         return {

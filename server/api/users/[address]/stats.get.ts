@@ -1,5 +1,6 @@
 import { UpdateUser } from '~/server/connectors/memory'
-import { getExplorerClient, convertPaddedHexToString } from '~/server/utils'
+import { getExplorerClient } from '~/server/utils'
+import { decodeCurrency } from '~/utils/currency'
 import type { AccountLinesRequest, AccountLinesResponse } from 'xrpl'
 
 async function getTokenStats(xrplAddress: string) {

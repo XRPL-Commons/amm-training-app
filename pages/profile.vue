@@ -229,17 +229,7 @@ const lpTokensWithPools = ref<any[]>([])
 const regularTokens = computed(() => walletTokens.value.filter(t => !t.isLPToken))
 const lpTokens = computed(() => walletTokens.value.filter(t => t.isLPToken))
 
-function decodeCurrency(currency: string): string {
-  if (currency.length <= 4) return currency
-  if (currency.length === 40 && currency.startsWith('03')) return 'LP'
-  // Decode hex currency
-  let str = ''
-  for (let i = 0; i < currency.length; i += 2) {
-    const code = parseInt(currency.substr(i, 2), 16)
-    if (code > 31 && code < 127) str += String.fromCharCode(code)
-  }
-  return str.replace(/\0/g, '').trim() || currency.slice(0, 6)
-}
+
 
 function formatReserve(amountObj: any): string {
   if (typeof amountObj === 'string') return (Number(amountObj) / 1_000_000).toFixed(2)
