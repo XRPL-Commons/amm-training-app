@@ -11,51 +11,60 @@
       </div>
 
       <p class="text-xl text-gray-600 dark:text-gray-300 mb-8">
-        Learn how Automated Market Makers work on the XRP Ledger
+        Learn how Automated Market Makers work on the XRP Ledger. Complete the end-to-end journey without any setup.
       </p>
 
-      <!-- Features -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-10 text-left">
-        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4">
+      <!-- Roadmap -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-10 text-left">
+        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
           <div class="flex items-center gap-2 mb-2">
-            <Icon name="heroicons:wallet" class="w-5 h-5 text-blue-500" />
-            <span class="font-medium text-gray-800 dark:text-white">Connect</span>
+            <div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold text-xs">1</div>
+            <span class="font-medium text-gray-800 dark:text-white">Setup</span>
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            Sign in with your Xaman wallet to get started
+            Auto-generate testnet wallets
           </p>
         </div>
-        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4">
+        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
           <div class="flex items-center gap-2 mb-2">
-            <Icon name="heroicons:currency-dollar" class="w-5 h-5 text-green-500" />
-            <span class="font-medium text-gray-800 dark:text-white">Explore</span>
+             <div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold text-xs">2</div>
+            <span class="font-medium text-gray-800 dark:text-white">Issue</span>
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            View tokens, set trustlines, and check balances
+            Issue your own token on the testnet
           </p>
         </div>
-        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4">
+        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
           <div class="flex items-center gap-2 mb-2">
-            <Icon name="heroicons:arrow-path-rounded-square" class="w-5 h-5 text-purple-500" />
+            <div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold text-xs">3</div>
+            <span class="font-medium text-gray-800 dark:text-white">Pool</span>
+          </div>
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            Create a native AMM pool
+          </p>
+        </div>
+        <div class="bg-white/50 dark:bg-gray-800/50 rounded-lg p-4 border border-gray-100 dark:border-gray-700">
+          <div class="flex items-center gap-2 mb-2">
+            <div class="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-blue-600 dark:text-blue-300 font-bold text-xs">4</div>
             <span class="font-medium text-gray-800 dark:text-white">Swap</span>
           </div>
           <p class="text-sm text-gray-600 dark:text-gray-400">
-            Trade tokens using AMM liquidity pools
+            Trade tokens against your AMM pool
           </p>
         </div>
       </div>
 
       <!-- CTA -->
       <UButton
-        label="Let's Go"
-        @click="submit"
+        label="Start Training"
+        @click="startTraining"
         size="xl"
         class="font-title"
         icon="i-heroicons-arrow-right"
         trailing
       />
 
-      <p class="text-sm text-white mt-4">
+      <p class="text-sm text-gray-500 mt-4">
         Running on XRPL Testnet
       </p>
     </div>
@@ -69,7 +78,7 @@ definePageMeta({
   layout: 'home'
 })
 
-const submit = () => {
-  router.push('/training')
+const startTraining = () => {
+  router.push('/training/setup')
 }
 </script>

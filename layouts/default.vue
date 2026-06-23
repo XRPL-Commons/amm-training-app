@@ -46,26 +46,41 @@
     <div class="p-6">
       <h3 class="text-lg font-title text-gray-900 dark:text-white mb-4">Your Profile</h3>
 
-      <div v-if="currentUser" class="mb-4">
-        <div class="text-xs text-gray-500 uppercase mb-1">Name</div>
-        <div class="text-lg font-medium text-gray-800 dark:text-white">{{ currentUser.name }}</div>
-      </div>
-
-      <div class="mb-6">
-        <div class="text-xs text-gray-500 uppercase mb-1">Address</div>
-        <div class="flex items-center gap-2">
-          <ColoredAddress :address="xrplAddress" variant="boxes" />
+      <div v-if="issuerWallet" class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-2">
+          <div class="text-xs text-gray-500 uppercase font-semibold">Treasury / Issuer Address</div>
+          <div class="text-xs font-bold text-blue-500">{{ treasuryXrpBalance }} XRP</div>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-mono text-sm text-gray-800 dark:text-gray-200 break-all">{{ issuerWallet.address }}</span>
           <UButton
             color="gray"
             variant="ghost"
             icon="i-heroicons-clipboard-document"
             size="xs"
-            @click="copyAddress"
+            @click="copyAddress(issuerWallet.address)"
           />
         </div>
       </div>
 
-      <div class="flex justify-end gap-2">
+      <div class="mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-100 dark:border-gray-700">
+        <div class="flex justify-between items-center mb-2">
+          <div class="text-xs text-gray-500 uppercase font-semibold">User / Receiver Address</div>
+          <div class="text-xs font-bold text-blue-500">{{ walletXrpBalance }} XRP</div>
+        </div>
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-mono text-sm text-gray-800 dark:text-gray-200 break-all">{{ xrplAddress }}</span>
+          <UButton
+            color="gray"
+            variant="ghost"
+            icon="i-heroicons-clipboard-document"
+            size="xs"
+            @click="copyAddress(xrplAddress)"
+          />
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-2 mt-8">
         <UButton color="primary" variant="ghost" @click="showProfileModal = false">
           Close
         </UButton>
@@ -78,7 +93,8 @@
 </template>
 
 <script lang="ts" setup>
-const { isConnected, xrplAddress, currentUser, loadFromStorage, connectWallet, disconnectWallet } = useWallet()
+const { isConnected, xrplAddress, currentUser, walletXrpBalance, treasuryXrpBalance, loadFromStorage, connectWallet, disconnectWallet } = useWallet()
+const { issuerWallet } = useTrainingProgress()
 const toast = useToast()
 
 const showProfileModal = ref(false)
@@ -96,8 +112,8 @@ function handleDisconnect() {
   showProfileModal.value = false
 }
 
-function copyAddress() {
-  navigator.clipboard.writeText(xrplAddress.value)
+function copyAddress(address: string) {
+  navigator.clipboard.writeText(address)
   toast.add({ title: 'Address copied', icon: 'i-heroicons-clipboard-document-check' })
 }
 </script>
