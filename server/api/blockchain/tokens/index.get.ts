@@ -1,6 +1,7 @@
 import { GetUsers } from '~/server/connectors/memory'
 import type { AccountLinesRequest, AccountLinesResponse } from 'xrpl'
-import { convertPaddedHexToString, getExplorerClient } from '~/server/utils';
+import { getExplorerClient } from '~/server/utils';
+import { decodeCurrency } from '~/utils/currency';
 
 const getTokens = async ({ xrplAddress }: { xrplAddress: string }) => {
   // list existing users
@@ -17,7 +18,7 @@ const getTokens = async ({ xrplAddress }: { xrplAddress: string }) => {
         // Detect if currency is hex-encoded (40 chars) or standard (3 chars)
         const isHexEncoded = line.currency.length === 40
         return {
-            currency: convertPaddedHexToString(line.currency),
+            currency: decodeCurrency(line.currency),
             currencyRaw: line.currency, // Preserve original format for transactions
             issuer: line.account,
             amount: line.balance,

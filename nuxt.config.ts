@@ -5,8 +5,6 @@ export default defineNuxtConfig({
   plugins: [],
   runtimeConfig: {
     // The private keys which are only available server-side
-    xrplCommonsAddress: process.env.XRPL_COMMONS_ADDRESS,
-    xrplCommonsSecret: process.env.XRPL_COMMONS_SECRET,
     wssExplorer: process.env.WSS_EXPLORER,
     adminPassword: process.env.ADMIN_PASSWORD,
     // Keys within public are also exposed client-side

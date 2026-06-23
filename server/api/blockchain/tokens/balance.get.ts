@@ -1,5 +1,6 @@
 import type { AccountLinesRequest, AccountLinesResponse } from 'xrpl'
-import { convertPaddedHexToString, getExplorerClient } from '~/server/utils';
+import { getExplorerClient } from '~/server/utils';
+import { decodeCurrency } from '~/utils/currency';
 
 const getTokenBalance = async ({ xrplAddress, issuer, currency }: { xrplAddress: string, issuer: string, currency: string }) => {
   const client = await getExplorerClient();
@@ -12,9 +13,9 @@ const getTokenBalance = async ({ xrplAddress, issuer, currency }: { xrplAddress:
 
     // Try matching with hex-decoded currency first, then raw currency
     let token = accountLinesResponse.result.lines
-        .filter(line => (convertPaddedHexToString(line.currency) === currency || line.currency === currency) && line.account === issuer)
+        .filter(line => (decodeCurrency(line.currency) === currency || line.currency === currency) && line.account === issuer)
         .map(line => ({
-            currency: convertPaddedHexToString(line.currency),
+            currency: decodeCurrency(line.currency),
             issuer: line.account,
             amount: line.balance
         }));

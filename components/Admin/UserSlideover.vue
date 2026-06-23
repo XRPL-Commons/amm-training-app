@@ -25,8 +25,20 @@
         <!-- Account Info -->
       <div class="mb-6" v-if="isDataForCurrentUser && accountInfo">
         <div class="text-xs text-gray-500 uppercase mb-2">XRP Balance</div>
-        <div class="text-2xl font-bold text-gray-800 dark:text-white">
+        <div class="text-2xl font-bold text-gray-800 dark:text-white mb-4">
           {{ formatXrp(accountInfo.result?.account_data?.Balance) }} XRP
+        </div>
+        <div v-if="user?.tokenCurrency" class="mb-2">
+          <div class="text-xs text-gray-500 uppercase">Token Currency</div>
+          <div class="text-sm font-semibold text-gray-800 dark:text-gray-200">{{ decodeCurrency(user.tokenCurrency) }}</div>
+        </div>
+        <div v-if="user?.tokenIssuer" class="mb-2">
+          <div class="text-xs text-gray-500 uppercase">Token Issuer</div>
+          <div class="text-sm font-mono text-gray-800 dark:text-gray-200 break-all">{{ user.tokenIssuer }}</div>
+        </div>
+        <div v-if="user?.ammAccount" class="mb-2">
+          <div class="text-xs text-gray-500 uppercase">AMM Account</div>
+          <div class="text-sm font-mono text-gray-800 dark:text-gray-200 break-all">{{ user.ammAccount }}</div>
         </div>
       </div>
 
@@ -220,6 +232,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import API from '~/server/client'
+import { decodeCurrency } from '~/utils/currency'
 
 const toast = useToast()
 const { cache: detailsCache, loadingAddresses, loadDetails } = useUserDetails()
@@ -240,6 +253,9 @@ interface User {
   xrplAddress: string
   name: string
   createdAt?: string
+  tokenCurrency?: string
+  tokenIssuer?: string
+  ammAccount?: string
 }
 
 interface Token {

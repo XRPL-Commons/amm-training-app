@@ -1,5 +1,6 @@
 import type { AccountLinesRequest, AccountLinesResponse, AMMInfoRequest, AMMInfoResponse, BookOffersRequest, BookOffersResponse } from 'xrpl'
-import { convertPaddedHexToString, convertStringToHexPadded, getExplorerClient } from '~/server/utils';
+import { getExplorerClient } from '~/server/utils';
+import { decodeCurrency, encodeCurrency } from '~/utils/currency';
 
 const getAmm = async ({ issuer, currency }: { issuer: string, currency: string }) => {
   const client = await getExplorerClient();
@@ -8,7 +9,7 @@ const getAmm = async ({ issuer, currency }: { issuer: string, currency: string }
     // Otherwise convert to hex (for backwards compatibility)
     const currencyForRequest = (currency.length === 3 || currency.length === 40)
       ? currency
-      : convertStringToHexPadded(currency);
+      : encodeCurrency(currency);
 
     const ammRequest: AMMInfoRequest = {
         command: 'amm_info',
@@ -37,7 +38,7 @@ const getAmm = async ({ issuer, currency }: { issuer: string, currency: string }
         lpToken: {
             issuer: ammResponse.result.amm.lp_token.issuer,
             amount: ammResponse.result.amm.lp_token.value,
-            currency: convertPaddedHexToString(ammResponse.result.amm.lp_token.currency),
+            currency: decodeCurrency(ammResponse.result.amm.lp_token.currency),
             currencyRaw: ammResponse.result.amm.lp_token.currency, // Keep raw hex for LP tokens (starts with 03)
             holders: obResponse.result.lines
               .filter(line => line.currency === ammResponse.result.amm.lp_token.currency)
@@ -83,7 +84,7 @@ function normalizeAmount(amount: any) {
         };
     } else if (typeof amount === 'object' && amount !== null) {
         return {
-            currency: convertPaddedHexToString(amount.currency),
+            currency: decodeCurrency(amount.currency),
             currencyRaw: amount.currency, // Preserve original format for transactions
             amount: amount.value,
             issuer: amount.issuer

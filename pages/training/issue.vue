@@ -82,6 +82,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { Client, Wallet, AccountSetAsfFlags, convertStringToHex } from 'xrpl'
+import API from '~/server/client'
 
 definePageMeta({
   middleware: 'training-client'
@@ -118,7 +119,7 @@ const issueToken = async () => {
   status.value.error = false
   errorMessage.value = ''
 
-  const client = new Client(config.public.wssExplorer || 'wss://s.altnet.rippletest.net:51233')
+  const client = new Client(config.public.wssExplorer as string || 'wss://s.altnet.rippletest.net:51233')
   
   try {
     await client.connect()
@@ -165,8 +166,19 @@ const issueToken = async () => {
     status.value.step = 4
     status.value.complete = true
     
-    // Save to progress
+    // Save to progress (localStorage)
     setCustomToken({ currency: formattedCurrency, issuer: issuer.address })
+
+    // Save token info to server so it appears in the participant pool list
+    try {
+      await API.updateUser({
+        address: user.address,
+        tokenCurrency: formattedCurrency,
+        tokenIssuer: issuer.address
+      })
+    } catch (e) {
+      console.warn('Could not save token info to server:', e)
+    }
 
   } catch (err: any) {
     status.value.error = true

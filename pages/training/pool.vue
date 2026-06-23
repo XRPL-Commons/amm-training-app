@@ -98,12 +98,13 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Client, Wallet } from 'xrpl'
+import API from '~/server/client'
 
 definePageMeta({
   middleware: 'training-client'
 })
 
-const { userWallet, customToken, unlockNextStep } = useTrainingProgress()
+const { userWallet, customToken, unlockNextStep, participantName } = useTrainingProgress()
 const router = useRouter()
 const config = useRuntimeConfig()
 
@@ -139,7 +140,7 @@ const errorMessage = ref('')
 
 const getClient = async () => {
   if (!xrplClient) {
-    xrplClient = new Client(config.public.wssExplorer || 'wss://s.altnet.rippletest.net:51233')
+    xrplClient = new Client(config.public.wssExplorer as string || 'wss://s.altnet.rippletest.net:51233')
   }
   if (!xrplClient.isConnected()) {
     await xrplClient.connect()
@@ -238,6 +239,35 @@ const createPool = async () => {
     status.value.step = 2
     status.value.complete = true
     await fetchBalances() // Refresh balances for next deposit
+
+    // Fetch the AMM pool account and save to server for the participant pool list
+    try {
+      const ammInfoRes = await client.request({
+        command: 'amm_info',
+        asset: { currency: customToken.value.currency, issuer: customToken.value.issuer },
+        asset2: { currency: 'XRP' }
+      })
+      const ammAccount = ammInfoRes.result.amm.account
+      try {
+        await API.updateUser({
+          address: user.address,
+          tokenCurrency: customToken.value.currency,
+          tokenIssuer: customToken.value.issuer,
+          ammAccount
+        })
+      } catch (updateErr: any) {
+        // User may not exist in memory (server restart) — re-create then update
+        await API.createUser({ xrplAddress: user.address, name: participantName.value || 'Participant' }).catch(() => {})
+        await API.updateUser({
+          address: user.address,
+          tokenCurrency: customToken.value.currency,
+          tokenIssuer: customToken.value.issuer,
+          ammAccount
+        })
+      }
+    } catch (e) {
+      console.warn('Could not save ammAccount to server:', e)
+    }
 
   } catch (err: any) {
     status.value.error = true

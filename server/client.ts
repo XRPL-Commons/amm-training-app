@@ -78,17 +78,11 @@ const actions = [
     method: 'POST'
   },
   {
-    name: 'XamanSignIn',
-    path: '/api/xaman/sign-in',
-    method: 'POST',
-    secretRequired: true
+    name: 'getParticipantPools',
+    path: '/api/blockchain/amm/pools',
+    method: 'GET'
   },
-  {
-    name: 'XamanGetPayload',
-    path: '/api/xaman/payload',
-    method: 'GET',
-    secretRequired: true
-  },
+
   {
     name: 'backupUsers',
     path: '/api/users/backup',
@@ -173,7 +167,7 @@ actions.forEach(action => {
 })
 
 // Custom methods for dynamic routes
-api.updateUser = async ({ address, name }: { address: string; name: string }) => {
+api.updateUser = async ({ address, name, tokenCurrency, tokenIssuer, ammAccount }: { address: string; name?: string; tokenCurrency?: string; tokenIssuer?: string; ammAccount?: string }) => {
   const headers: Headers = { 'content-type': 'application/json' }
   const adminPassword = getAdminPassword()
   if (adminPassword) headers['x-admin-password'] = adminPassword
@@ -181,7 +175,7 @@ api.updateUser = async ({ address, name }: { address: string; name: string }) =>
   const response = await fetch(`/api/users/${encodeURIComponent(address)}`, {
     method: 'PATCH',
     headers,
-    body: JSON.stringify({ name })
+    body: JSON.stringify({ name, tokenCurrency, tokenIssuer, ammAccount })
   })
   if (!response.ok) throw new Error('Failed to update user')
   return response.json()

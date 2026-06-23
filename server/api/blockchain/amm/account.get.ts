@@ -1,5 +1,6 @@
 import type { AMMInfoRequest, AMMInfoResponse } from 'xrpl'
-import { convertPaddedHexToString, getExplorerClient } from '~/server/utils';
+import { getExplorerClient } from '~/server/utils';
+import { decodeCurrency } from '~/utils/currency';
 
 const getAmmByAccount = async ({ ammAccount }: { ammAccount: string }) => {
   const client = await getExplorerClient();
@@ -39,7 +40,7 @@ function normalizeAmount(amount: any) {
     };
   } else if (typeof amount === 'object' && amount !== null) {
     return {
-      currency: convertPaddedHexToString(amount.currency),
+      currency: decodeCurrency(amount.currency),
       currencyRaw: amount.currency, // Preserve original format
       amount: amount.value,
       issuer: amount.issuer,
