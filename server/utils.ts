@@ -1,9 +1,6 @@
 import { Wallet, Client } from 'xrpl';
 
-export function getWallet() {
-    const wallet = Wallet.fromSeed(process.env.XRPL_COMMONS_SECRET || '');
-    return wallet
-}
+
 
 export async function getExplorerClient() {
     const client = new Client(process.env.WSS_EXPLORER || '');

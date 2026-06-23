@@ -4,6 +4,10 @@ export type User = {
   createdAt: string;
   tokenCount?: number;
   poolCount?: number;
+  // Training progress fields
+  tokenCurrency?: string;   // e.g. 'USD' or 40-char hex
+  tokenIssuer?: string;     // issuer wallet address
+  ammAccount?: string;      // AMM pool's own XRPL account address
 };
 
 let users: User[] = [];
@@ -44,7 +48,7 @@ export const GetUsers = async (
 
 export const UpdateUser = async (
   xrplAddress: string,
-  updates: { name?: string; tokenCount?: number; poolCount?: number }
+  updates: { name?: string; tokenCount?: number; poolCount?: number; tokenCurrency?: string; tokenIssuer?: string; ammAccount?: string }
 ): Promise<User | null> => {
   const userIndex = users.findIndex((user) => user.xrplAddress === xrplAddress);
 
@@ -69,6 +73,18 @@ export const UpdateUser = async (
 
   if (updates.poolCount !== undefined) {
     users[userIndex].poolCount = updates.poolCount;
+  }
+
+  if (updates.tokenCurrency !== undefined) {
+    users[userIndex].tokenCurrency = updates.tokenCurrency;
+  }
+
+  if (updates.tokenIssuer !== undefined) {
+    users[userIndex].tokenIssuer = updates.tokenIssuer;
+  }
+
+  if (updates.ammAccount !== undefined) {
+    users[userIndex].ammAccount = updates.ammAccount;
   }
 
   return users[userIndex];

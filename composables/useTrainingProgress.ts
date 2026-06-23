@@ -17,6 +17,7 @@ export const useTrainingProgress = () => {
   const userWallet = useState<WalletInfo | null>('training_user', () => null)
   const customToken = useState<TokenInfo | null>('training_token', () => null)
   const isLoaded = useState<boolean>('training_loaded', () => false)
+  const participantName = useState<string>('training_name', () => '')
 
   // Load from local storage
   const loadProgress = () => {
@@ -33,6 +34,9 @@ export const useTrainingProgress = () => {
 
     const storedToken = localStorage.getItem('training_token')
     if (storedToken) customToken.value = JSON.parse(storedToken)
+
+    const storedName = localStorage.getItem('training_name')
+    if (storedName) participantName.value = storedName
     
     isLoaded.value = true
   }
@@ -44,6 +48,7 @@ export const useTrainingProgress = () => {
     if (issuerWallet.value) localStorage.setItem('training_issuer', JSON.stringify(issuerWallet.value))
     if (userWallet.value) localStorage.setItem('training_user', JSON.stringify(userWallet.value))
     if (customToken.value) localStorage.setItem('training_token', JSON.stringify(customToken.value))
+    if (participantName.value) localStorage.setItem('training_name', participantName.value)
   }
 
   const setStep = (step: number) => {
@@ -78,12 +83,19 @@ export const useTrainingProgress = () => {
     issuerWallet.value = null
     userWallet.value = null
     customToken.value = null
+    participantName.value = ''
     if (import.meta.client) {
       localStorage.removeItem('training_step')
       localStorage.removeItem('training_issuer')
       localStorage.removeItem('training_user')
       localStorage.removeItem('training_token')
+      localStorage.removeItem('training_name')
     }
+  }
+
+  const setParticipantName = (name: string) => {
+    participantName.value = name
+    saveProgress()
   }
 
   return {
@@ -92,12 +104,14 @@ export const useTrainingProgress = () => {
     issuerWallet: computed(() => issuerWallet.value),
     userWallet: computed(() => userWallet.value),
     customToken: computed(() => customToken.value),
+    participantName: computed(() => participantName.value),
     loadProgress,
     setStep,
     unlockNextStep,
     setIssuerWallet,
     setUserWallet,
     setCustomToken,
+    setParticipantName,
     resetProgress
   }
 }

@@ -1,9 +1,6 @@
 import { UpdateUser } from '~/server/connectors/memory'
-import { requireAdminAuth } from '~/server/utils/adminAuth'
 
 export default defineEventHandler(async (event) => {
-  await requireAdminAuth(event)
-
   try {
     const address = getRouterParam(event, 'address')
     const body = await readBody(event)
@@ -15,7 +12,12 @@ export default defineEventHandler(async (event) => {
       })
     }
 
-    const updated = await UpdateUser(address, { name: body.name })
+    const updated = await UpdateUser(address, {
+      name: body.name,
+      tokenCurrency: body.tokenCurrency,
+      tokenIssuer: body.tokenIssuer,
+      ammAccount: body.ammAccount
+    })
 
     if (!updated) {
       throw createError({
@@ -32,6 +34,7 @@ export default defineEventHandler(async (event) => {
         statusMessage: 'Name already taken'
       })
     }
+    if (error.statusCode) throw error
     throw createError({
       status: 500,
       statusMessage: 'Failed to update user'

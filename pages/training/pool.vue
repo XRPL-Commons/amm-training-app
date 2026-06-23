@@ -98,6 +98,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { Client, Wallet } from 'xrpl'
+import API from '~/server/client'
 
 definePageMeta({
   middleware: 'training-client'
@@ -139,7 +140,7 @@ const errorMessage = ref('')
 
 const getClient = async () => {
   if (!xrplClient) {
-    xrplClient = new Client(config.public.wssExplorer || 'wss://s.altnet.rippletest.net:51233')
+    xrplClient = new Client(config.public.wssExplorer as string || 'wss://s.altnet.rippletest.net:51233')
   }
   if (!xrplClient.isConnected()) {
     await xrplClient.connect()
@@ -238,6 +239,22 @@ const createPool = async () => {
     status.value.step = 2
     status.value.complete = true
     await fetchBalances() // Refresh balances for next deposit
+
+    // Fetch the AMM pool account and save to server for the participant pool list
+    try {
+      const ammInfoRes = await client.request({
+        command: 'amm_info',
+        asset: { currency: customToken.value.currency, issuer: customToken.value.issuer },
+        asset2: { currency: 'XRP' }
+      })
+      const ammAccount = ammInfoRes.result.amm.account
+      await API.updateUser({
+        address: user.address,
+        ammAccount
+      })
+    } catch (e) {
+      console.warn('Could not save ammAccount to server:', e)
+    }
 
   } catch (err: any) {
     status.value.error = true
