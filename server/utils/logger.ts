@@ -90,6 +90,9 @@ const pinoLogger = pino(
     timestamp: () => `,"dt":"${new Date().toISOString()}"`,
     messageKey: 'msg',
     base: { service: SERVICE_NAME },
+    // The facade already serializes `err` into the contract shape; Pino's default
+    // err serializer would otherwise re-shape it (adds `type`, reorders keys).
+    serializers: { err: (value: unknown) => value },
     redact: {
       paths: [
         'password',
