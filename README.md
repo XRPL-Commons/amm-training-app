@@ -75,6 +75,26 @@ npm run dev
 
 The application will be available at `http://localhost:3000`.
 
+## Logging
+
+Server-side code logs through the Pino facade in `server/utils/logger.ts` (the fleet standard, shared with the other XRPL Commons apps):
+
+```ts
+import { createLogger } from '~/server/utils/logger'
+
+const log = createLogger('store')
+log.info('user created', { xrplAddress })
+log.error('failed to persist users.json', { err }) // errors always go in `err`, never in the message
+```
+
+- **Development** (`npm run dev`): coloured, multi-line `pino-pretty` output.
+- **Production** (`NODE_ENV=production`): one JSON line per event on stdout, at most 1900 bytes, with `dt`, `level`, `msg`, `service`, and `err` / `event` when relevant. This is what Better Stack and the fleet-wide alerts (`level = ERROR|FATAL`, `event = startup`) consume. The Nitro plugin `server/plugins/00.logging.ts` also routes any stray `console.*` (including Nitro's own request errors) through the facade, emits one `event=startup` line at boot (`commit` comes from `COMMIT_SHA`), and turns uncaught exceptions / unhandled rejections into a single `FATAL` line before exiting with code 1.
+- `LOG_LEVEL` (optional, default `info`) selects the minimum level: `fatal`, `error`, `warn`, `info`, `debug`, `trace`.
+
+Level discipline matters because `ERROR` pages a human: use `WARN` for expected, handled failures (validation rejects, 4xx returned to a client, optional integration unavailable), `ERROR` only for failures the app could not handle (5xx, upstream call failed, invariant violated), and `INFO` for lifecycle and business events, not per-request chatter (that is `DEBUG`).
+
+Run the logging contract tests with `npm test`.
+
 ## Tech Stack
 
 - [Nuxt 3](https://nuxt.com/) - Vue.js framework
