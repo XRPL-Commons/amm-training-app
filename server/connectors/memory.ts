@@ -1,5 +1,8 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs'
 import { join, dirname } from 'path'
+import { createLogger } from '../utils/logger'
+
+const log = createLogger('store')
 
 export type User = {
   xrplAddress: string;
@@ -25,7 +28,8 @@ function loadFromDisk(): User[] {
       return JSON.parse(readFileSync(STORE_PATH, 'utf-8'))
     }
   } catch (e) {
-    console.warn('[store] Failed to read users.json, starting fresh:', e)
+    // Expected/handled: a missing or corrupt file just means an empty store.
+    log.warn('failed to read users.json, starting fresh', { err: e, path: STORE_PATH })
   }
   return []
 }
@@ -37,7 +41,8 @@ function persist(): void {
     }
     writeFileSync(STORE_PATH, JSON.stringify(users, null, 2))
   } catch (e) {
-    console.error('[store] Failed to persist users.json:', e)
+    // Unexpected: the write failed and data will be lost on restart.
+    log.error('failed to persist users.json', { err: e, path: STORE_PATH })
   }
 }
 
