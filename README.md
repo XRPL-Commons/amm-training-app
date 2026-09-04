@@ -95,6 +95,10 @@ Level discipline matters because `ERROR` pages a human: use `WARN` for expected,
 
 Run the logging contract tests with `npm test`.
 
+## Analytics
+
+Page views are tracked with [Fathom](https://usefathom.com) (privacy-friendly, cookie-free, no consent banner). `plugins/fathom.client.ts` injects `https://cdn.usefathom.com/script.js` in **production builds only**; development never loads it. The site id (`TXPDCLCO`) is public because it ships in the client script, so it is hard-coded in `nuxt.config.ts` under `runtimeConfig.public.fathomSiteId` rather than read from an env var.
+
 ## Tech Stack
 
 - [Nuxt 3](https://nuxt.com/) - Vue.js framework

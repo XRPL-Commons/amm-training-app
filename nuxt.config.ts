@@ -10,7 +10,9 @@ export default defineNuxtConfig({
     // Keys within public are also exposed client-side
     public: {
       apiBase: '/api',
-      network: process.env.NETWORK
+      network: process.env.NETWORK,
+      // Fathom site id is public (shipped in the client tracking script), not a secret
+      fathomSiteId: 'TXPDCLCO'
     }
   },
   ssr: false,
